@@ -16,11 +16,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public class PostgresRepositoryImpl implements MainRepository {
+public class PostgresMainRepositoryImpl implements MainRepository {
     private JdbcTemplate jdbcTemplate;
 
     @Autowired
-    public PostgresRepositoryImpl(JdbcTemplate jdbcTemplate) {
+    public PostgresMainRepositoryImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 

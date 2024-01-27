@@ -2,19 +2,18 @@ package ru.coffee.smallchat.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.coffee.smallchat.dto.*;
 import ru.coffee.smallchat.repository.MainRepository;
-import ru.coffee.smallchat.repository.impl.PostgresRepositoryImpl;
+import ru.coffee.smallchat.repository.impl.PostgresMainRepositoryImpl;
 import ru.coffee.smallchat.service.MainService;
+import ru.coffee.smallchat.service.PhotoService;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -24,17 +23,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MainServiceImpl implements MainService {
 
-    private String savedPhotoDir;
-    private MainRepository postgresRepository;
+    private final MainRepository postgresRepository;
+    private final PhotoService photoService;
 
-    public MainServiceImpl(@Value("${saved.photo.dir}") String savedPhotoDir,
-                           @Autowired PostgresRepositoryImpl postgresRepository) {
-        if (savedPhotoDir.isEmpty()) {
-            this.savedPhotoDir = System.getProperty("user.dir");
-        } else {
-            this.savedPhotoDir = savedPhotoDir;
-        }
+    public MainServiceImpl(@Autowired PostgresMainRepositoryImpl postgresRepository,
+                           @Autowired PhotoService photoService) {
         this.postgresRepository = postgresRepository;
+        this.photoService = photoService;
     }
 
     @Override
@@ -50,23 +45,25 @@ public class MainServiceImpl implements MainService {
         if (photo == null || photo.isEmpty()) {
             String photoPath = getUserPhotoPath(userUuid);
             if (photoPath != null) {
-                deleteUserPhotoFile(photoPath, userUuid);
+                photoService.deletePhoto(userUuid);
                 deleteUserPhotoPath(userUuid);
             }
         } else {
-            String photoPath = saveUserPhotoFile(photo, userUuid);
+            String photoPath = photoService.savePhoto(userUuid, photo);
             if (photoPath == null) {
+                log.error("Uuid: " + userUuid);
+                log.error("MainServiceImpl.saveUser - неожиданное поведение, " +
+                        "не сохранился путь к файлу у пользователя");
                 return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
             Integer rawPhotoUpdate = saveUserPhotoPath(photoPath, photo.getContentType(), userUuid);
             if (rawPhotoUpdate < 1) {
-                return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
-            }
-            if (rawPhotoUpdate != 1) {
                 log.error("Uuid: " + userUuid);
                 log.error("MainServiceImpl.saveUser - неожиданное поведение, " +
                         "не сохранился путь к файлу у пользователя");
+                return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
+            photoService.addPhotoToQueueForDelete(userUuid);
         }
 
         return new ResponseDTO<>(200, userUuid);
@@ -78,29 +75,6 @@ public class MainServiceImpl implements MainService {
         } catch (InterruptedException e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.sleepToFilledInDataBase - " + e.getMessage());
-        }
-    }
-
-    public String saveUserPhotoFile(MultipartFile photo, String userUuid) {
-        try {
-            Path filePath = Path.of(savedPhotoDir, "user_photos", userUuid);
-            Files.write(filePath, photo.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            return filePath.toString();
-        } catch (IOException e) {
-            log.error("Uuid: " + userUuid);
-            log.error("MainServiceImpl.saveUserPhotoFile - " + e.getMessage());
-            return null;
-        }
-    }
-
-    @Override
-    public void deleteUserPhotoFile(String photoPath, String userUuid) {
-        Path filePath = Path.of(photoPath);
-        try {
-            Files.delete(filePath);
-        } catch (IOException e) {
-            log.error("Uuid: " + userUuid);
-            log.error("MainServiceImpl.deleteUserPhotoFile - " + e.getMessage());
         }
     }
 

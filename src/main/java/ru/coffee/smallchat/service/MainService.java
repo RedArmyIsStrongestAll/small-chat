@@ -10,8 +10,6 @@ public interface MainService {
 
     ResponseDTO<UserDTO> getUserByUuid(String lookingUserUuid, String userUuid);
 
-    void deleteUserPhotoFile(String photoPath, String userUuid);
-
     ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userUuid, Integer offset);
 
     ResponseDTO<List<ChatDTO>> getPersonalChatList(String userUuid);
