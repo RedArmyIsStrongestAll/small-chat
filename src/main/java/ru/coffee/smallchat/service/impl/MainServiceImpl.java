@@ -171,6 +171,7 @@ public class MainServiceImpl implements MainService {
                 setPhoto(user, userUuid);
                 chatDTO.getPartnerUser().setName(user.getName());
                 chatDTO.getPartnerUser().setPhoto(user.getPhoto());
+                chatDTO.getPartnerUser().setPhotoType(user.getPhotoType());
                 return chatDTO;
             }).collect(Collectors.toList());
 

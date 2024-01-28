@@ -23,4 +23,6 @@ public class UserDTO {
     private String photoPath;
     @Schema(description = "фотография собеседника")
     private byte[] photo;
+    @Schema(description = "формат фотографии (пример: \"image/png\")")
+    private String photoType;
 }

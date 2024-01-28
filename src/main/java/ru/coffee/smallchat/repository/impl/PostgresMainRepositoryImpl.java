@@ -101,7 +101,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Transactional
     public List<ChatDTO> getPersonalChatIdListForProducer(String userUuid) throws DataAccessException {
-        String query = "select c.id \n" +
+        String query = "select c.id, c.consumer_user_session_id \n" +
                 "from chats c \n" +
                 "where c.producer_user_session_id = ?;";
         return jdbcTemplate.query(query, new Object[]{userUuid}, new int[]{Types.CHAR},
@@ -146,14 +146,15 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     @Override
     @Transactional
     public UserDTO getUserByUuid(String userUuid) throws DataAccessException {
-        String query = "select us.\"name\", us.photo_path \n" +
+        String query = "select us.\"name\", us.photo_path, us.photo_type \n" +
                 "from user_sessions us \n" +
                 "where us.session_id = ?;";
         return jdbcTemplate.queryForObject(query, new Object[]{userUuid}, new int[]{Types.CHAR},
                 (rs, ri) -> new UserDTO(userUuid,
                         rs.getString("name"),
                         rs.getString("photo_path"),
-                        null));
+                        null,
+                        rs.getString("photo_type")));
     }
 
     @Override

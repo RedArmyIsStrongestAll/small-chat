@@ -11,7 +11,7 @@ import lombok.Data;
 public class PersonalMessageRequestDTO {
     @Schema(description = "сообщение")
     private String message;
-    @Schema(description = "получатель")
+    @Schema(description = "uuid получателя")
     private String consumerUserUuid;
     @Schema(description = "id чата")
     private Long chatId;
