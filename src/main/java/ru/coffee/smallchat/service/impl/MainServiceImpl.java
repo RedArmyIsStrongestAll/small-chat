@@ -78,7 +78,7 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    public Integer saveUserName(String name, String userUuid) {
+    private Integer saveUserName(String name, String userUuid) {
         try {
             return postgresRepository.saveName(name, userUuid);
         } catch (DataAccessException e) {
@@ -88,7 +88,7 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    public String getUserPhotoPath(String userUuid) {
+    private String getUserPhotoPath(String userUuid) {
         try {
             return postgresRepository.getPhotoPath(userUuid);
         } catch (DataAccessException e) {
@@ -98,7 +98,7 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    public Integer saveUserPhotoPath(String path, String type, String userUuid) {
+    private Integer saveUserPhotoPath(String path, String type, String userUuid) {
         try {
             return postgresRepository.savePhotoPath(path, type, userUuid);
         } catch (DataAccessException e) {
@@ -108,7 +108,7 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    public void deleteUserPhotoPath(String userUuid) {
+    private void deleteUserPhotoPath(String userUuid) {
         try {
             Integer rawDelete = postgresRepository.deletePhotoPath(userUuid);
             if (rawDelete != 1) {
@@ -135,7 +135,7 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    public void setPhoto(UserDTO user, String userUuid) {
+    private void setPhoto(UserDTO user, String userUuid) {
         try {
             String photoPath = user.getPhotoPath();
             Path filePath = Path.of(photoPath);
@@ -150,6 +150,9 @@ public class MainServiceImpl implements MainService {
     public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userUuid, Integer offset) {
         try {
             List<PublicMessageResponseDTO> messageList = postgresRepository.getPublicHistory(offset);
+            messageList.forEach(message -> {
+                message.setSendTime(convertTimeFromDatabase(message.getSendTime()));
+            });
             return new ResponseDTO<>(200, messageList);
         } catch (Exception e) {
             log.error("Uuid: " + userUuid);
@@ -186,6 +189,7 @@ public class MainServiceImpl implements MainService {
             messageList.forEach(message -> {
                 Boolean itIsProducer = message.getProducerUserUuid().equals(userUuid);
                 message.setItIsProducer(itIsProducer);
+                message.setSendTime(convertTimeFromDatabase(message.getSendTime()));
             });
             return new ResponseDTO<>(200, messageList);
         } catch (Exception e) {
@@ -206,7 +210,7 @@ public class MainServiceImpl implements MainService {
                         "не сохранилось public сообщение");
                 return null;
             }
-            return new PublicMessageResponseDTO(message, convertLocalDataTime(currentTime), producerUserUuid);
+            return new PublicMessageResponseDTO(message, convertDateTimeToDatabase(currentTime), producerUserUuid);
         } catch (Exception e) {
             log.error("Uuid: " + producerUserUuid);
             log.error("MainServiceImpl.savePublicMessage - " + e.getMessage());
@@ -247,7 +251,7 @@ public class MainServiceImpl implements MainService {
                 return null;
             }
 
-            return new PersonalMessageResponseDTO(message, convertLocalDataTime(currentTime),
+            return new PersonalMessageResponseDTO(message, convertTimeFromDatabase(convertDateTimeToDatabase(currentTime)),
                     producerUserUuid, consumerUserUuid, chatId, senderIsProducer, !senderIsProducer);
         } catch (Exception e) {
             log.error("Uuid: " + producerUserUuid);
@@ -256,8 +260,14 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    public String convertLocalDataTime(LocalDateTime currentTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    private String convertDateTimeToDatabase(LocalDateTime currentTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
         return currentTime.format(formatter);
+    }
+
+    private String convertTimeFromDatabase(String dataTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
+        LocalDateTime time = LocalDateTime.parse(dataTime, formatter);
+        return time.format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 }

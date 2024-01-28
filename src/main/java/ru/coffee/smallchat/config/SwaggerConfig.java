@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
     private String websocketApiDescription = "<h2> Websocket </h2> " +
-            "Кроме того существуют методы Websocket подключения: " +
 
             "<h3> /websocket/endpoint </h3> " +
             "метод подклчения к ws портоколу <br/><br/>" +
@@ -67,10 +66,13 @@ public class SwaggerConfig {
     public OpenAPI springShopOpenAPI() {
         return new OpenAPI()
                 .externalDocs(new ExternalDocumentation()
-                        .description(descriptionSeparator + "GitHub")
+                        .description("GitHub")
                         .url("https://github.com/RedArmyIsStrongestAll/small-chat"))
                 .info(new Info().title("Small-Chat API-UI")
-                        .description(websocketApiDescription.concat(descriptionSeparator).concat(sessionIdDescription))
+                        .description(websocketApiDescription
+                                .concat(descriptionSeparator)
+                                .concat(sessionIdDescription)
+                                .concat(descriptionSeparator))
                         .version("v0.0.1"));
     }
 }
