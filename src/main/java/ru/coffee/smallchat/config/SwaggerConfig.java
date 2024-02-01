@@ -18,7 +18,7 @@ public class SwaggerConfig {
             "ОЖИДАЕТСЯ ПЕРЕДАЧА UUID ПООЛЬЗОВТАЛЯ В ЗАГОЛОВКЕ \"SESSION\" <br/><br/>" +
             "принимает объект: String <br/><br/>" +
 
-            "<h3> /chat/read/public </h3> " +
+            "<h3> /topic/public </h3> " +
             "метод подписки к общему чату <br/><br/>" +
             "возвращает объект: <br/><br/> " +
             "{\n" +
@@ -27,7 +27,7 @@ public class SwaggerConfig {
             "  \"producerUserUuid\": \"String\"\n" +
             "} <br/><br/>" +
 
-            "<h3> /user/chat/read/public/error </h3> " +
+            "<h3> /user/topic/public.error </h3> " +
             "метод подписки на обшибки при отпарвке в общий чат <br/><br/>" +
             "возвращает объект: String <br/><br/>" +
 
@@ -41,7 +41,7 @@ public class SwaggerConfig {
             "  \"chatId\": Long\n" +
             "} <br/><br/>" +
 
-            "<h3> /user/chat/read/private </h3>" +
+            "<h3> /user/topic/private </h3>" +
             "метод подписки на все личные чаты <br/><br/>" +
             "возвращает объект: <br/><br/> " +
             "{\n" +
@@ -53,7 +53,7 @@ public class SwaggerConfig {
             "  \"itIsProducer\": Boolean\n" +
             "}<br/><br/>" +
 
-            "<h3> /user/chat/read/private/error </h3> " +
+            "<h3> /user/topic/private.error </h3> " +
             "метод подписки на обшибки при отпарвке в личные чат <br/><br/>" +
             "возвращает объект: String ";
 

@@ -39,12 +39,16 @@ public class WebsocketConfig extends AbstractSessionWebSocketMessageBrokerConfig
     }
 
     @Override
-    public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.setApplicationDestinationPrefixes("/chat/send");
-        config.enableSimpleBroker("/chat/read");
-        config.setUserDestinationPrefix("/user");
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.setPreservePublishOrder(true)
+                .setApplicationDestinationPrefixes("/chat/send")
+                .enableStompBrokerRelay("/topic")
+                .setRelayHost(env.getProperty("rabbitmq.stomp.host"))
+                .setRelayPort(Integer.parseInt(env.getProperty("rabbitmq.stomp.port")))
+                .setSystemLogin(env.getProperty("rabbitmq.stomp.username"))
+                .setSystemPasscode(env.getProperty("rabbitmq.stomp.password"))
+                .setUserDestinationBroadcast("/topic/unresolved-user");
     }
-
 
     public static class MyHandshakeHandler extends DefaultHandshakeHandler {
         @Override

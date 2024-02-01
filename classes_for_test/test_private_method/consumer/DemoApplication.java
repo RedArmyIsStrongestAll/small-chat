@@ -64,7 +64,7 @@ public class DemoApplication {
         public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
             super.afterConnected(session, connectedHeaders);
 
-            session.subscribe("/user/chat/read/private", new StompFrameHandler() {
+            session.subscribe("/user/topic/private", new StompFrameHandler() {
                 @Override
                 public Type getPayloadType(StompHeaders headers) {
                     return MessageResponseDTO.class;
