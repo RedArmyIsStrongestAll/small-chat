@@ -1,0 +1,42 @@
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %yellow(%thread) %highlight(%-5level) %logger{36} %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE_CONSOLE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>log/console/console.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>log/archive/console.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>20</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %thread %-5level %logger{36} %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="JSON_FILE_CONSOLE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>log/console/console.json.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>log/archive/console.json.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>13</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="ch.qos.logback.contrib.json.classic.JsonLayout">
+                <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter"/>
+                <timestampFormat>yyyy-MM-dd HH:mm:ss.SSS</timestampFormat>
+                <appendLineSeparator>true</appendLineSeparator>
+            </layout>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE_CONSOLE"/>
+        <appender-ref ref="JSON_FILE_CONSOLE"/>
+    </root>
+</configuration>

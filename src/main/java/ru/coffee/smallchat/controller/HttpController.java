@@ -29,36 +29,36 @@ public class HttpController {
     public Callable<ResponseDTO<String>> registry(HttpSession httpSession,
                                                   @RequestParam(value = "photo", required = false) MultipartFile photo,
                                                   @RequestParam(value = "name", required = false) String name) {
-        return () -> mainService.saveUser(name, photo, httpSession.getId());
+        return () -> mainService.registry(name, photo, httpSession.getId());
     }
 
     @GetMapping("/user")
     @Operation(summary = "получение имени и фотографии по uuid")
-    public Callable<ResponseDTO<UserDTO>> getUserByUuid(HttpSession httpSession,
-                                                        @RequestParam("uuid") String userUuid) {
-        return () -> mainService.getUserByUuid(userUuid, httpSession.getId());
+    public ResponseDTO<UserDTO> getUserByUuid(HttpSession httpSession,
+                                              @RequestParam("uuid") String userUuid) {
+        return mainService.getUserByUuid(userUuid, httpSession.getId());
     }
 
     @GetMapping("/public/history")
     @Operation(summary = "поулчение истории общего чата",
             description = "offset начинается с 0")
-    public Callable<ResponseDTO<List<PublicMessageResponseDTO>>> publicChatHistory(HttpSession httpSession,
-                                                                                   @RequestParam("offset") Integer offset) {
-        return () -> mainService.getPublicHistory(httpSession.getId(), offset);
+    public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(HttpSession httpSession,
+                                                                        @RequestParam("offset") Integer offset) {
+        return mainService.getPublicHistory(httpSession.getId(), offset);
     }
 
     @GetMapping("/personal/list")
     @Operation(summary = "поулчение спсика личных чатов")
-    public Callable<ResponseDTO<List<ChatDTO>>> personalChatList(HttpSession httpSession) {
-        return () -> mainService.getPersonalChatList(httpSession.getId());
+    public ResponseDTO<List<ChatDTO>> getPersonalChatList(HttpSession httpSession) {
+        return mainService.getPersonalChatList(httpSession.getId());
     }
 
     @GetMapping("/personal/history")
     @Operation(summary = "поулчение истории личного чата",
             description = "offset начинается с 0")
-    public Callable<ResponseDTO<List<PersonalMessageResponseDTO>>> personalChatHistory(HttpSession httpSession,
-                                                                                       @RequestParam("chatId") Long chatId,
-                                                                                       @RequestParam("offset") Integer offset) {
-        return () -> mainService.getPersonalHistory(chatId, httpSession.getId(), offset);
+    public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(HttpSession httpSession,
+                                                                            @RequestParam("chatId") Long chatId,
+                                                                            @RequestParam("offset") Integer offset) {
+        return mainService.getPersonalHistory(chatId, httpSession.getId(), offset);
     }
 }

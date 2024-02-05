@@ -1,5 +1,6 @@
 package ru.coffee.smallchat.service.impl;
 
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -25,21 +26,27 @@ public class MainServiceImpl implements MainService {
 
     private final MainRepository postgresRepository;
     private final PhotoService photoService;
+    private final PrometheusMeterRegistry meterRegistry;
 
     public MainServiceImpl(@Autowired PostgresMainRepositoryImpl postgresRepository,
-                           @Autowired PhotoService photoService) {
+                           @Autowired PhotoService photoService,
+                           @Autowired PrometheusMeterRegistry meterRegistry) {
         this.postgresRepository = postgresRepository;
         this.photoService = photoService;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
-    public ResponseDTO<String> saveUser(String name, MultipartFile photo, String userUuid) {
+    public ResponseDTO<String> registry(String name, MultipartFile photo, String userUuid) {
         sleepToFilledInDataBase(userUuid);
         Integer rawNameUpdate = saveUserName(name, userUuid);
         if (rawNameUpdate != 1) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.saveUser - неожиданное поведение, " +
                     "не сохарнилось имя у пользователя");
+            meterRegistry.counter("error_in_service",
+                    "method", "registry",
+                    "uuid", userUuid).increment();
         }
 
         if (photo == null || photo.isEmpty()) {
@@ -52,15 +59,21 @@ public class MainServiceImpl implements MainService {
             String photoPath = photoService.savePhoto(userUuid, photo);
             if (photoPath == null) {
                 log.error("Uuid: " + userUuid);
-                log.error("MainServiceImpl.saveUser - неожиданное поведение, " +
+                log.error("MainServiceImpl.registry - неожиданное поведение, " +
                         "не сохранился путь к файлу у пользователя");
+                meterRegistry.counter("error_in_controller",
+                        "method", "registry",
+                        "uuid", userUuid).increment();
                 return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
             Integer rawPhotoUpdate = saveUserPhotoPath(photoPath, photo.getContentType(), userUuid);
             if (rawPhotoUpdate < 1) {
                 log.error("Uuid: " + userUuid);
-                log.error("MainServiceImpl.saveUser - неожиданное поведение, " +
+                log.error("MainServiceImpl.registry - неожиданное поведение, " +
                         "не сохранился путь к файлу у пользователя");
+                meterRegistry.counter("error_in_controller",
+                        "method", "registry",
+                        "uuid", userUuid).increment();
                 return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
             photoService.addPhotoToQueueForDelete(userUuid);
@@ -75,6 +88,9 @@ public class MainServiceImpl implements MainService {
         } catch (InterruptedException e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.sleepToFilledInDataBase - " + e.getMessage());
+            meterRegistry.counter("error_in_service",
+                    "method", "sleepToFilledInDataBase",
+                    "uuid", userUuid).increment();
         }
     }
 
@@ -94,6 +110,9 @@ public class MainServiceImpl implements MainService {
         } catch (DataAccessException e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.getUserPhotoPath - " + e.getMessage());
+            meterRegistry.counter("error_in_service",
+                    "method", "getUserPhotoPath",
+                    "uuid", userUuid).increment();
             return null;
         }
     }
@@ -115,10 +134,17 @@ public class MainServiceImpl implements MainService {
                 log.error("Uuid: " + userUuid);
                 log.error("MainServiceImpl.deleteUserPhotoPath - неожиданное поведение, " +
                         "не удалился путь к файлу у пользовтаеля");
+                meterRegistry.counter("error_in_service",
+                        "method", "deleteUserPhotoPath",
+                        "uuid", userUuid).increment();
+
             }
         } catch (DataAccessException e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.deleteUserPhotoPath - " + e.getMessage());
+            meterRegistry.counter("error_in_service",
+                    "method", "deleteUserPhotoPath",
+                    "uuid", userUuid).increment();
         }
     }
 
@@ -131,6 +157,9 @@ public class MainServiceImpl implements MainService {
         } catch (Exception e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.getUserByUuid - " + e.getMessage());
+            meterRegistry.counter("error_in_controller",
+                    "method", "getUserByUuid",
+                    "uuid", userUuid).increment();
             return new ResponseDTO<>(400, "Ошибка получения пользователя");
         }
     }
@@ -143,6 +172,9 @@ public class MainServiceImpl implements MainService {
         } catch (IOException e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.setPhoto - " + e.getMessage());
+            meterRegistry.counter("error_in_service",
+                    "method", "setPhoto",
+                    "uuid", userUuid).increment();
         }
     }
 
@@ -157,6 +189,9 @@ public class MainServiceImpl implements MainService {
         } catch (Exception e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.getPublicHistory - " + e.getMessage());
+            meterRegistry.counter("error_in_controller",
+                    "method", "getPublicHistory",
+                    "uuid", userUuid).increment();
             return new ResponseDTO<>(400, "Ошибка получения сообщений");
         }
     }
@@ -179,12 +214,16 @@ public class MainServiceImpl implements MainService {
         } catch (Exception e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.getPersonalChatList - " + e.getMessage());
+            meterRegistry.counter("error_in_controller",
+                    "method", "getPersonalChatList",
+                    "uuid", userUuid).increment();
             return new ResponseDTO<>(400, "Ошибка получения списка чатов");
         }
     }
 
     @Override
-    public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId, String userUuid, Integer offset) {
+    public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId,
+                                                                            String userUuid, Integer offset) {
         try {
             List<PersonalMessageResponseDTO> messageList = postgresRepository.getPersonalHistory(chatId, offset);
             messageList.forEach(message -> {
@@ -196,6 +235,9 @@ public class MainServiceImpl implements MainService {
         } catch (Exception e) {
             log.error("Uuid: " + userUuid);
             log.error("MainServiceImpl.getPersonalHistory - " + e.getMessage());
+            meterRegistry.counter("error_in_controller",
+                    "method", "getPersonalHistory",
+                    "uuid", userUuid).increment();
             return new ResponseDTO<>(400, "Ошибка получения сообщений");
         }
     }
@@ -209,18 +251,25 @@ public class MainServiceImpl implements MainService {
                 log.error("Uuid: " + producerUserUuid);
                 log.error("MainServiceImpl.savePublicMessage - неожиданное поведение, " +
                         "не сохранилось public сообщение");
+                meterRegistry.counter("error_in_controller",
+                        "method", "savePublicMessage",
+                        "uuid", producerUserUuid).increment();
                 return null;
             }
             return new PublicMessageResponseDTO(message, convertDateTimeToDatabase(currentTime), producerUserUuid);
         } catch (Exception e) {
             log.error("Uuid: " + producerUserUuid);
             log.error("MainServiceImpl.savePublicMessage - " + e.getMessage());
+            meterRegistry.counter("error_in_controller",
+                    "method", "savePublicMessage",
+                    "uuid", producerUserUuid).increment();
             return null;
         }
     }
 
     @Override
-    public PersonalMessageResponseDTO savePersonalMessage(String message, Long chatId, String consumerUserUuid, String producerUserUuid) {
+    public PersonalMessageResponseDTO savePersonalMessage(String message, Long chatId,
+                                                          String consumerUserUuid, String producerUserUuid) {
         try {
             LocalDateTime currentTime = LocalDateTime.now();
 
@@ -232,6 +281,9 @@ public class MainServiceImpl implements MainService {
                     log.error("Uuid: " + producerUserUuid);
                     log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
                             "не сохранён новый чат в таблицу chats");
+                    meterRegistry.counter("error_in_controller",
+                            "method", "savePersonalMessage",
+                            "uuid", producerUserUuid).increment();
                     return null;
                 }
             } else {
@@ -249,14 +301,21 @@ public class MainServiceImpl implements MainService {
                 log.error("Uuid: " + producerUserUuid);
                 log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
                         "не создалось personal сообщение");
+                meterRegistry.counter("error_in_controller",
+                        "method", "savePersonalMessage",
+                        "uuid", producerUserUuid).increment();
                 return null;
             }
 
-            return new PersonalMessageResponseDTO(message, convertTimeFromDatabase(convertDateTimeToDatabase(currentTime)),
+            return new PersonalMessageResponseDTO(message,
+                    convertTimeFromDatabase(convertDateTimeToDatabase(currentTime)),
                     producerUserUuid, consumerUserUuid, chatId, senderIsProducer, !senderIsProducer);
         } catch (Exception e) {
             log.error("Uuid: " + producerUserUuid);
             log.error("MainServiceImpl.savePersonalMessage - " + e.getMessage());
+            meterRegistry.counter("error_in_controller",
+                    "method", "savePersonalMessage",
+                    "uuid", producerUserUuid).increment();
             return null;
         }
     }

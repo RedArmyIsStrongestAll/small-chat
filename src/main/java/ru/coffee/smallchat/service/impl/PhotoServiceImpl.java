@@ -1,5 +1,6 @@
 package ru.coffee.smallchat.service.impl;
 
+import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,14 +27,18 @@ public class PhotoServiceImpl implements PhotoService {
     private final PhotoRepository photoRepository;
     private final MainRepository mainRepository;
     private final Long userLiveTimeMinutes;
+    private final PrometheusMeterRegistry meterRegistry;
+
 
     public PhotoServiceImpl(@Autowired PhotoRepository photoRepository,
                             @Autowired MainRepository mainRepository,
-                            @Value("${user.live.time.minutes}") Long userLiveTimeMinutes) {
+                            @Value("${user.live.time.minutes}") Long userLiveTimeMinutes,
+                            @Autowired PrometheusMeterRegistry meterRegistry) {
         this.queue = new ConcurrentLinkedQueue<>();
         this.photoRepository = photoRepository;
         this.mainRepository = mainRepository;
         this.userLiveTimeMinutes = userLiveTimeMinutes;
+        this.meterRegistry = meterRegistry;
     }
 
     @Scheduled(fixedDelayString = "#{${user.live.time.minutes} * 1000 * 60}")
@@ -56,6 +61,9 @@ public class PhotoServiceImpl implements PhotoService {
             } catch (DataAccessException e) {
                 log.error("Uuid: " + fileForDeleteDTO.getUserUuid());
                 log.error("PhotoServiceImpl.scheduledDeletePhoto - " + e.getMessage());
+                meterRegistry.counter("error_in_service",
+                        "method", "scheduledDeletePhoto",
+                        "uuid", fileForDeleteDTO.getUserUuid()).increment();
             }
         }
     }
@@ -68,6 +76,9 @@ public class PhotoServiceImpl implements PhotoService {
         } catch (Exception e) {
             log.error("Uuid: " + userUuid);
             log.error("PhotoServiceImpl.addPhotoToQueueForDelete - " + e.getMessage());
+            meterRegistry.counter("error_in_service",
+                    "method", "addPhotoToQueueForDelete",
+                    "uuid", userUuid).increment();
             throw new RuntimeException(e);
         }
     }
@@ -90,6 +101,9 @@ public class PhotoServiceImpl implements PhotoService {
         } catch (Exception e) {
             log.error("Uuid: " + userUuid);
             log.error("PhotoServiceImpl.deletePhoto - " + e.getMessage());
+            meterRegistry.counter("error_in_service",
+                    "method", "deletePhoto",
+                    "uuid", userUuid).increment();
             throw new RuntimeException(e);
         }
     }

@@ -6,7 +6,7 @@ import ru.coffee.smallchat.dto.*;
 import java.util.List;
 
 public interface MainService {
-    ResponseDTO<String> saveUser(String name, MultipartFile photo, String userUuid);
+    ResponseDTO<String> registry(String name, MultipartFile photo, String userUuid);
 
     ResponseDTO<UserDTO> getUserByUuid(String lookingUserUuid, String userUuid);
 
