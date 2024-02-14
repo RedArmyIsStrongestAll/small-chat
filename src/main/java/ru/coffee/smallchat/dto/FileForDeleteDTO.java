@@ -8,6 +8,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 public class FileForDeleteDTO {
-    private String userUuid;
+    private String userId;
     private LocalDateTime time;
 }

@@ -11,12 +11,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Schema(description = "объект собеседника по чату")
 public class UserDTO {
-    public UserDTO(String userUuid) {
-        this.userUuid = userUuid;
+    public UserDTO(String userId) {
+        this.userId = userId;
     }
 
-    @Schema(description = "uuid собеседника")
-    private String userUuid;
+    @Schema(description = "id собеседника")
+    private String userId;
     @Schema(description = "имя собеседника")
     private String name;
     @JsonIgnore

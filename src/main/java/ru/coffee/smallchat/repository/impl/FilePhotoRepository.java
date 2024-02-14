@@ -24,9 +24,9 @@ public class FilePhotoRepository implements PhotoRepository {
     }
 
     @Override
-    public String savePhoto(String userUuid, MultipartFile photo) throws RuntimeException {
+    public String savePhoto(String userId, MultipartFile photo) throws RuntimeException {
         try {
-            Path filePath = Path.of(savedPhotoDir, "user_photos", userUuid);
+            Path filePath = Path.of(savedPhotoDir, "user_photos", userId);
             Files.write(filePath, photo.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             return filePath.toString();
         } catch (IOException e) {
@@ -35,9 +35,9 @@ public class FilePhotoRepository implements PhotoRepository {
     }
 
     @Override
-    public void deletePhoto(String userUuid) throws RuntimeException {
+    public void deletePhoto(String userId) throws RuntimeException {
         try {
-            Path filePath = Path.of(savedPhotoDir, "user_photos", userUuid);
+            Path filePath = Path.of(savedPhotoDir, "user_photos", userId);
             Files.delete(filePath);
         } catch (IOException e) {
             throw new RuntimeException(e);

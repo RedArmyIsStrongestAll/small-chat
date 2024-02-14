@@ -6,19 +6,17 @@ import ru.coffee.smallchat.dto.*;
 import java.util.List;
 
 public interface MainService {
-    //todo rename -> editUser
-    ResponseDTO<String> registry(String name, MultipartFile photo, String userUuid);
+    ResponseDTO<Void> editProfile(String name, MultipartFile photo, String userId);
 
-    //todo rename -> byId
-    ResponseDTO<UserDTO> getUserByUuid(String lookingUserUuid, String userUuid);
+    ResponseDTO<UserDTO> getUserById(String lookingUserId, String userId);
 
-    ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userUuid, Integer offset);
+    ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userId, Integer offset);
 
-    ResponseDTO<List<ChatDTO>> getPersonalChatList(String userUuid);
+    ResponseDTO<List<ChatDTO>> getPersonalChatList(String userId);
 
-    ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId, String userUuid, Integer offset);
+    ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId, String userId, Integer offset);
 
-    PublicMessageResponseDTO savePublicMessage(String message, String producerUserUuid);
+    PublicMessageResponseDTO savePublicMessage(String message, String producerUserId);
 
-    PersonalMessageResponseDTO savePersonalMessage(String message, Long chatId, String consumerUserUuid, String producerUserUuid);
+    PersonalMessageResponseDTO savePersonalMessage(String message, Long chatId, String consumerUserId, String producerUserId);
 }

@@ -43,67 +43,68 @@ public class PhotoServiceImpl implements PhotoService {
 
     @Scheduled(fixedDelayString = "#{${user.live.time.minutes} * 1000 * 60}")
     private void scheduledDeletePhoto() {
+        //todo Подумай про удаление: удалять ли вообще или это тоже 149
         if (!queue.isEmpty()) {
             FileForDeleteDTO fileForDeleteDTO = queue.poll();
 
             try {
-                mainRepository.getUserByUuid(fileForDeleteDTO.getUserUuid());
+                mainRepository.getUserById(fileForDeleteDTO.getUserId());
                 fileForDeleteDTO.setTime(fileForDeleteDTO.getTime().plusMinutes(userLiveTimeMinutes));
                 queue.add(fileForDeleteDTO);
             } catch (EmptyResultDataAccessException e) {
 
                 if (LocalDateTime.now().isAfter(fileForDeleteDTO.getTime())) {
-                    log.info("PhotoServiceImpl.scheduledDeletePhoto - удаление фотонрафии uuid " + fileForDeleteDTO.getUserUuid());
-                    photoRepository.deletePhoto(fileForDeleteDTO.getUserUuid());
+                    log.info("PhotoServiceImpl.scheduledDeletePhoto - удаление фотонрафии id " + fileForDeleteDTO.getUserId());
+                    photoRepository.deletePhoto(fileForDeleteDTO.getUserId());
                 } else {
                     queue.add(fileForDeleteDTO);
                 }
             } catch (DataAccessException e) {
-                log.error("Uuid: " + fileForDeleteDTO.getUserUuid());
+                log.error("Id: " + fileForDeleteDTO.getUserId());
                 log.error("PhotoServiceImpl.scheduledDeletePhoto - " + e.getMessage());
                 meterRegistry.counter("error_in_service",
                         "method", "scheduledDeletePhoto",
-                        "uuid", fileForDeleteDTO.getUserUuid()).increment();
+                        "id", fileForDeleteDTO.getUserId()).increment();
             }
         }
     }
 
     @Override
-    public void addPhotoToQueueForDelete(String userUuid) {
+    public void addPhotoToQueueForDelete(String userId) {
         try {
             LocalDateTime localDateTime = LocalDateTime.now().plusMinutes(userLiveTimeMinutes);
-            queue.add(new FileForDeleteDTO(userUuid, localDateTime));
+            queue.add(new FileForDeleteDTO(userId, localDateTime));
         } catch (Exception e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("PhotoServiceImpl.addPhotoToQueueForDelete - " + e.getMessage());
             meterRegistry.counter("error_in_service",
                     "method", "addPhotoToQueueForDelete",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public String savePhoto(String userUuid, MultipartFile photo) {
+    public String savePhoto(String userId, MultipartFile photo) {
         try {
-            return photoRepository.savePhoto(userUuid, photo);
+            return photoRepository.savePhoto(userId, photo);
         } catch (RuntimeException e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("PhotoServiceImpl.savePhoto - " + e.getMessage());
             return null;
         }
     }
 
     @Override
-    public void deletePhoto(String userUuid) {
+    public void deletePhoto(String userId) {
         try {
-            photoRepository.deletePhoto(userUuid);
+            photoRepository.deletePhoto(userId);
         } catch (Exception e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("PhotoServiceImpl.deletePhoto - " + e.getMessage());
             meterRegistry.counter("error_in_service",
                     "method", "deletePhoto",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
             throw new RuntimeException(e);
         }
     }

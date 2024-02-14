@@ -9,28 +9,28 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface MainRepository {
-    Integer saveName(String name, String userUuid);
+    Integer saveName(String name, String userId);
 
-    String getPhotoPath(String userUuid);
+    String getPhotoPath(String userId);
 
-    Integer savePhotoPath(String path, String type, String userUuid);
+    Integer savePhotoPath(String path, String type, String userId);
 
-    Integer deletePhotoPath(String userUuid);
+    Integer deletePhotoPath(String userId);
 
-    UserDTO getUserByUuid(String userUuid);
+    UserDTO getUserById(String userId);
 
     List<PublicMessageResponseDTO> getPublicHistory(Integer offset);
 
-    List<ChatDTO> getPersonalChatProducerId(String userUuid);
+    List<ChatDTO> getPersonalChatProducerId(String userId);
 
-    ChatDTO getPersonalChatProducerId(String producerUserUuid, String consumerUserUuid);
+    ChatDTO getPersonalChatProducerId(String producerUserId, String consumerUserId);
 
     List<PersonalMessageResponseDTO> getPersonalHistory(Long chatId, Integer offset);
 
-    Integer savePublicMessage(String message, String producerUserUuid, LocalDateTime currentTime);
+    Integer savePublicMessage(String message, String producerUserId, LocalDateTime currentTime);
 
     Integer savePersonalMessage(String message, LocalDateTime currentTime, Long chatId,
-                                String producerUserUuid, Boolean senderIsProducer);
+                                String producerUserId, Boolean senderIsProducer);
 
-    Long saveChat(String producerUserUuid, String consumerUserUuid);
+    Long saveChat(String producerUserId, String consumerUserId);
 }

@@ -37,149 +37,149 @@ public class MainServiceImpl implements MainService {
     }
 
     @Override
-    public ResponseDTO<String> registry(String name, MultipartFile photo, String userUuid) {
-        sleepToFilledInDataBase(userUuid);
-        Integer rawNameUpdate = saveUserName(name, userUuid);
+    public ResponseDTO<Void> editProfile(String name, MultipartFile photo, String userId) {
+        sleepToFilledInDataBase(userId);
+        Integer rawNameUpdate = saveUserName(name, userId);
         if (rawNameUpdate != 1) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.saveUser - неожиданное поведение, " +
                     "не сохарнилось имя у пользователя");
             meterRegistry.counter("error_in_service",
                     "method", "registry",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
         }
 
         if (photo == null || photo.isEmpty()) {
-            String photoPath = getUserPhotoPath(userUuid);
+            String photoPath = getUserPhotoPath(userId);
             if (photoPath != null) {
-                photoService.deletePhoto(userUuid);
-                deleteUserPhotoPath(userUuid);
+                photoService.deletePhoto(userId);
+                deleteUserPhotoPath(userId);
             }
         } else {
-            String photoPath = photoService.savePhoto(userUuid, photo);
+            String photoPath = photoService.savePhoto(userId, photo);
             if (photoPath == null) {
-                log.error("Uuid: " + userUuid);
+                log.error("Id: " + userId);
                 log.error("MainServiceImpl.registry - неожиданное поведение, " +
                         "не сохранился путь к файлу у пользователя");
                 meterRegistry.counter("error_in_controller",
                         "method", "registry",
-                        "uuid", userUuid).increment();
+                        "id", userId).increment();
                 return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
-            Integer rawPhotoUpdate = saveUserPhotoPath(photoPath, photo.getContentType(), userUuid);
+            Integer rawPhotoUpdate = saveUserPhotoPath(photoPath, photo.getContentType(), userId);
             if (rawPhotoUpdate < 1) {
-                log.error("Uuid: " + userUuid);
+                log.error("Id: " + userId);
                 log.error("MainServiceImpl.registry - неожиданное поведение, " +
                         "не сохранился путь к файлу у пользователя");
                 meterRegistry.counter("error_in_controller",
                         "method", "registry",
-                        "uuid", userUuid).increment();
+                        "id", userId).increment();
                 return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
-            photoService.addPhotoToQueueForDelete(userUuid);
+            photoService.addPhotoToQueueForDelete(userId);
         }
 
-        return new ResponseDTO<>(200, userUuid);
+        return new ResponseDTO<>(200, null);
     }
 
-    private void sleepToFilledInDataBase(String userUuid) {
+    private void sleepToFilledInDataBase(String userId) {
         try {
             Thread.sleep(100L);
         } catch (InterruptedException e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.sleepToFilledInDataBase - " + e.getMessage());
             meterRegistry.counter("error_in_service",
                     "method", "sleepToFilledInDataBase",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
         }
     }
 
-    private Integer saveUserName(String name, String userUuid) {
+    private Integer saveUserName(String name, String userId) {
         try {
-            return postgresRepository.saveName(name, userUuid);
+            return postgresRepository.saveName(name, userId);
         } catch (DataAccessException e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.saveUserName - " + e.getMessage());
             return 0;
         }
     }
 
-    private String getUserPhotoPath(String userUuid) {
+    private String getUserPhotoPath(String userId) {
         try {
-            return postgresRepository.getPhotoPath(userUuid);
+            return postgresRepository.getPhotoPath(userId);
         } catch (DataAccessException e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.getUserPhotoPath - " + e.getMessage());
             meterRegistry.counter("error_in_service",
                     "method", "getUserPhotoPath",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
             return null;
         }
     }
 
-    private Integer saveUserPhotoPath(String path, String type, String userUuid) {
+    private Integer saveUserPhotoPath(String path, String type, String userId) {
         try {
-            return postgresRepository.savePhotoPath(path, type, userUuid);
+            return postgresRepository.savePhotoPath(path, type, userId);
         } catch (DataAccessException e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.saveUserPhotoPath - " + e.getMessage());
             return 0;
         }
     }
 
-    private void deleteUserPhotoPath(String userUuid) {
+    private void deleteUserPhotoPath(String userId) {
         try {
-            Integer rawDelete = postgresRepository.deletePhotoPath(userUuid);
+            Integer rawDelete = postgresRepository.deletePhotoPath(userId);
             if (rawDelete != 1) {
-                log.error("Uuid: " + userUuid);
+                log.error("Id: " + userId);
                 log.error("MainServiceImpl.deleteUserPhotoPath - неожиданное поведение, " +
                         "не удалился путь к файлу у пользовтаеля");
                 meterRegistry.counter("error_in_service",
                         "method", "deleteUserPhotoPath",
-                        "uuid", userUuid).increment();
+                        "id", userId).increment();
 
             }
         } catch (DataAccessException e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.deleteUserPhotoPath - " + e.getMessage());
             meterRegistry.counter("error_in_service",
                     "method", "deleteUserPhotoPath",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
         }
     }
 
     @Override
-    public ResponseDTO<UserDTO> getUserByUuid(String lookingUserUuid, String userUuid) {
+    public ResponseDTO<UserDTO> getUserById(String lookingUserId, String userId) {
         try {
-            UserDTO user = postgresRepository.getUserByUuid(lookingUserUuid);
-            setPhoto(user, userUuid);
+            UserDTO user = postgresRepository.getUserById(lookingUserId);
+            setPhoto(user, userId);
             return new ResponseDTO<>(200, user);
         } catch (Exception e) {
-            log.error("Uuid: " + userUuid);
-            log.error("MainServiceImpl.getUserByUuid - " + e.getMessage());
+            log.error("Id: " + userId);
+            log.error("MainServiceImpl.getUserById - " + e.getMessage());
             meterRegistry.counter("error_in_controller",
-                    "method", "getUserByUuid",
-                    "uuid", userUuid).increment();
+                    "method", "getUserById",
+                    "id", userId).increment();
             return new ResponseDTO<>(400, "Ошибка получения пользователя");
         }
     }
 
-    private void setPhoto(UserDTO user, String userUuid) {
+    private void setPhoto(UserDTO user, String userId) {
         try {
             String photoPath = user.getPhotoPath();
             Path filePath = Path.of(photoPath);
             user.setPhoto(Files.readAllBytes(filePath));
         } catch (IOException e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.setPhoto - " + e.getMessage());
             meterRegistry.counter("error_in_service",
                     "method", "setPhoto",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
         }
     }
 
     @Override
-    public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userUuid, Integer offset) {
+    public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userId, Integer offset) {
         try {
             List<PublicMessageResponseDTO> messageList = postgresRepository.getPublicHistory(offset);
             messageList.forEach(message -> {
@@ -187,23 +187,23 @@ public class MainServiceImpl implements MainService {
             });
             return new ResponseDTO<>(200, messageList);
         } catch (Exception e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.getPublicHistory - " + e.getMessage());
             meterRegistry.counter("error_in_controller",
                     "method", "getPublicHistory",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
             return new ResponseDTO<>(400, "Ошибка получения сообщений");
         }
     }
 
     @Override
-    public ResponseDTO<List<ChatDTO>> getPersonalChatList(String userUuid) {
+    public ResponseDTO<List<ChatDTO>> getPersonalChatList(String userId) {
         try {
-            List<ChatDTO> privateChatList = postgresRepository.getPersonalChatProducerId(userUuid);
+            List<ChatDTO> privateChatList = postgresRepository.getPersonalChatProducerId(userId);
 
             List<ChatDTO> returnList = privateChatList.stream().map((chatDTO) -> {
-                UserDTO user = postgresRepository.getUserByUuid(chatDTO.getPartnerUser().getUserUuid());
-                setPhoto(user, userUuid);
+                UserDTO user = postgresRepository.getUserById(chatDTO.getPartnerUser().getUserId());
+                setPhoto(user, userId);
                 chatDTO.getPartnerUser().setName(user.getName());
                 chatDTO.getPartnerUser().setPhoto(user.getPhoto());
                 chatDTO.getPartnerUser().setPhotoType(user.getPhotoType());
@@ -212,83 +212,83 @@ public class MainServiceImpl implements MainService {
 
             return new ResponseDTO<>(200, returnList);
         } catch (Exception e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.getPersonalChatList - " + e.getMessage());
             meterRegistry.counter("error_in_controller",
                     "method", "getPersonalChatList",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
             return new ResponseDTO<>(400, "Ошибка получения списка чатов");
         }
     }
 
     @Override
     public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId,
-                                                                            String userUuid, Integer offset) {
+                                                                            String userId, Integer offset) {
         try {
             List<PersonalMessageResponseDTO> messageList = postgresRepository.getPersonalHistory(chatId, offset);
             messageList.forEach(message -> {
-                Boolean itIsProducer = message.getProducerUserUuid().equals(userUuid);
+                Boolean itIsProducer = message.getProducerUserId().equals(userId);
                 message.setItIsProducer(itIsProducer);
                 message.setSendTime(convertTimeFromDatabase(message.getSendTime()));
             });
             return new ResponseDTO<>(200, messageList);
         } catch (Exception e) {
-            log.error("Uuid: " + userUuid);
+            log.error("Id: " + userId);
             log.error("MainServiceImpl.getPersonalHistory - " + e.getMessage());
             meterRegistry.counter("error_in_controller",
                     "method", "getPersonalHistory",
-                    "uuid", userUuid).increment();
+                    "id", userId).increment();
             return new ResponseDTO<>(400, "Ошибка получения сообщений");
         }
     }
 
     @Override
-    public PublicMessageResponseDTO savePublicMessage(String message, String producerUserUuid) {
+    public PublicMessageResponseDTO savePublicMessage(String message, String producerUserId) {
         try {
             LocalDateTime currentTime = LocalDateTime.now();
-            Integer rawInsert = postgresRepository.savePublicMessage(message, producerUserUuid, currentTime);
+            Integer rawInsert = postgresRepository.savePublicMessage(message, producerUserId, currentTime);
             if (rawInsert != 1) {
-                log.error("Uuid: " + producerUserUuid);
+                log.error("Id: " + producerUserId);
                 log.error("MainServiceImpl.savePublicMessage - неожиданное поведение, " +
                         "не сохранилось public сообщение");
                 meterRegistry.counter("error_in_controller",
                         "method", "savePublicMessage",
-                        "uuid", producerUserUuid).increment();
+                        "id", producerUserId).increment();
                 return null;
             }
-            return new PublicMessageResponseDTO(message, convertDateTimeToDatabase(currentTime), producerUserUuid);
+            return new PublicMessageResponseDTO(message, convertDateTimeToDatabase(currentTime), producerUserId);
         } catch (Exception e) {
-            log.error("Uuid: " + producerUserUuid);
+            log.error("Id: " + producerUserId);
             log.error("MainServiceImpl.savePublicMessage - " + e.getMessage());
             meterRegistry.counter("error_in_controller",
                     "method", "savePublicMessage",
-                    "uuid", producerUserUuid).increment();
+                    "id", producerUserId).increment();
             return null;
         }
     }
 
     @Override
     public PersonalMessageResponseDTO savePersonalMessage(String message, Long chatId,
-                                                          String consumerUserUuid, String producerUserUuid) {
+                                                          String consumerUserId, String producerUserId) {
         try {
             LocalDateTime currentTime = LocalDateTime.now();
 
             Boolean senderIsProducer;
             if (chatId == null) {
-                chatId = postgresRepository.saveChat(producerUserUuid, consumerUserUuid);
+                chatId = postgresRepository.saveChat(producerUserId, consumerUserId);
                 senderIsProducer = true;
                 if (chatId == null) {
-                    log.error("Uuid: " + producerUserUuid);
+                    log.error("Id: " + producerUserId);
                     log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
                             "не сохранён новый чат в таблицу chats");
                     meterRegistry.counter("error_in_controller",
                             "method", "savePersonalMessage",
-                            "uuid", producerUserUuid).increment();
+                            "id", producerUserId).increment();
                     return null;
                 }
             } else {
-                ChatDTO chatDTO = postgresRepository.getPersonalChatProducerId(producerUserUuid, consumerUserUuid);
-                if (chatDTO.getPartnerUser().getUserUuid().equals(producerUserUuid)) {
+                ChatDTO chatDTO = postgresRepository.getPersonalChatProducerId(producerUserId, consumerUserId);
+                if (chatDTO.getPartnerUser().getUserId().equals(producerUserId)) {
                     senderIsProducer = true;
                 } else {
                     senderIsProducer = false;
@@ -296,26 +296,26 @@ public class MainServiceImpl implements MainService {
             }
 
             Integer rawInsertPersonalMessage = postgresRepository.savePersonalMessage(message, currentTime,
-                    chatId, producerUserUuid, senderIsProducer);
+                    chatId, producerUserId, senderIsProducer);
             if (rawInsertPersonalMessage != 1) {
-                log.error("Uuid: " + producerUserUuid);
+                log.error("Id: " + producerUserId);
                 log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
                         "не создалось personal сообщение");
                 meterRegistry.counter("error_in_controller",
                         "method", "savePersonalMessage",
-                        "uuid", producerUserUuid).increment();
+                        "id", producerUserId).increment();
                 return null;
             }
 
             return new PersonalMessageResponseDTO(message,
                     convertTimeFromDatabase(convertDateTimeToDatabase(currentTime)),
-                    producerUserUuid, consumerUserUuid, chatId, senderIsProducer, !senderIsProducer);
+                    producerUserId, consumerUserId, chatId, senderIsProducer, !senderIsProducer);
         } catch (Exception e) {
-            log.error("Uuid: " + producerUserUuid);
+            log.error("Id: " + producerUserId);
             log.error("MainServiceImpl.savePersonalMessage - " + e.getMessage());
             meterRegistry.counter("error_in_controller",
                     "method", "savePersonalMessage",
-                    "uuid", producerUserUuid).increment();
+                    "id", producerUserId).increment();
             return null;
         }
     }

@@ -5,6 +5,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import ru.coffee.smallchat.dto.PersonalMessageRequestDTO;
 import ru.coffee.smallchat.dto.PersonalMessageResponseDTO;
@@ -25,6 +26,11 @@ public class WebsocketController {
         this.messagingTemplate = messagingTemplate;
     }
 
+    private Object getUserId() {
+        return SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
+
     /***
      * отправка /chat/send/public
      * получение /topic/public
@@ -33,10 +39,9 @@ public class WebsocketController {
     @MessageMapping("public")
     @SendTo("/topic/public")
     public PublicMessageResponseDTO sendPublicChat(@Payload String message) {
-        //todo principalProducerUuid.getName()
-        PublicMessageResponseDTO returnMessage = mainService.savePublicMessage(message, "principalProducerUuid.getName()");
+        PublicMessageResponseDTO returnMessage = mainService.savePublicMessage(message, getUserId().toString());
         if (returnMessage == null) {
-            messagingTemplate.convertAndSendToUser("principalProducerUuid.getName()",
+            messagingTemplate.convertAndSendToUser(getUserId().toString(),
                     "/topic/public.error",
                     "Сообщение \"" + message + "\" не отправлено. Внутреняя ошибка сервера.");
         }
@@ -51,15 +56,14 @@ public class WebsocketController {
      */
     @MessageMapping("personal")
     public void sendPersonalChat(@Payload PersonalMessageRequestDTO message) {
-        //todo principalProducerUuid.getName()
         PersonalMessageResponseDTO returnMessage = mainService.savePersonalMessage(message.getMessage(), message.getChatId(),
-                message.getConsumerUserUuid(), "principalProducerUuid.getName()");
+                message.getConsumerUserId(), getUserId().toString());
         if (returnMessage == null) {
-            messagingTemplate.convertAndSendToUser("principalProducerUuid.getName()",
+            messagingTemplate.convertAndSendToUser(getUserId().toString(),
                     "/topic/private.error",
                     "Сообщение \"" + message.getMessage() + "\" не отправлено. Внутреняя ошибка сервера.");
         } else {
-            messagingTemplate.convertAndSendToUser(message.getConsumerUserUuid(),
+            messagingTemplate.convertAndSendToUser(message.getConsumerUserId(),
                     "/topic/private", returnMessage);
         }
     }
