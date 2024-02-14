@@ -65,9 +65,10 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     public List<PublicMessageResponseDTO> getPublicHistory(Integer offset) throws DataAccessException {
         offset = offset * 50;
         String query = "select pm.message, \n" +
-                "pm.producer_user_session_id, \n" +
+                "pm.producer_user_id, \n" +
                 "pm.send_time \n" +
                 "from public_messages pm \n" +
+                "where pm.deleted_at is null \n" +
                 "order by id \n" +
                 "offset ? \n" +
                 "limit 50;";
@@ -92,7 +93,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         String query = "select c.id, c.producer_user_id \n" +
                 "from chats c \n" +
                 "where c.producer_user_id = ? \n" +
-                "and c.consumer_user_id = ?;";
+                "and c.consumer_user_id = ? \n" +
+                "and c.deleted_at is null \n";
         return jdbcTemplate.queryForObject(query, new Object[]{producerUserId, consumerUserId},
                 new int[]{Types.CHAR, Types.CHAR},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
@@ -103,7 +105,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     public List<ChatDTO> getPersonalChatIdListForProducer(String userId) throws DataAccessException {
         String query = "select c.id, c.consumer_user_id \n" +
                 "from chats c \n" +
-                "where c.producer_user_id = ?;";
+                "where c.producer_user_id = ? \n" +
+                "and c.deleted_at is null;";
         return jdbcTemplate.query(query, new Object[]{userId}, new int[]{Types.CHAR},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
                         new UserDTO(rs.getString("consumer_user_session_id"))));
@@ -113,7 +116,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     public List<ChatDTO> getPersonalChatIdListForConsumer(String userId) throws DataAccessException {
         String query = "select c.id, c.producer_user_id \n" +
                 "from chats c \n" +
-                "where c.consumer_user_id = ?;";
+                "where c.consumer_user_id = ? \n" +
+                "and c.deleted_at is null;";
         return jdbcTemplate.query(query, new Object[]{userId}, new int[]{Types.CHAR},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
                         new UserDTO(rs.getString("producer_user_session_id"))));
@@ -130,6 +134,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                 "from personal_messages pm \n" +
                 "left join chats c on pm.chat_id = c.id \n" +
                 "where pm.chat_id = ? \n" +
+                "and c.deleted_at is null \n" +
                 "order by pm.id \n" +
                 "offset ? \n" +
                 "limit 50;";
@@ -148,7 +153,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     public UserDTO getUserById(String userId) throws DataAccessException {
         String query = "select us.\"name\", us.photo_path, us.photo_type \n" +
                 "from users us \n" +
-                "where us.id = ?;";
+                "where us.id = ? \n" +
+                "and us.deleted_at is null;";
         return jdbcTemplate.queryForObject(query, new Object[]{userId}, new int[]{Types.CHAR},
                 (rs, ri) -> new UserDTO(userId,
                         rs.getString("name"),
@@ -159,9 +165,18 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
+    public Integer deleteUser(String userId) throws DataAccessException {
+        String query = "update users \n" +
+                "set deleted_at = now() \n" +
+                "where id = ?;";
+        return jdbcTemplate.update(query, userId);
+    }
+
+    @Override
+    @Transactional
     public Integer savePublicMessage(String message, String producerUserId,
                                      LocalDateTime currentTime) throws DataAccessException {
-        String query = "insert into public_messages (message, producer_user_session_id, send_time) \n" +
+        String query = "insert into public_messages (message, producer_user_id, send_time) \n" +
                 "values (?, ?, ?);";
         return jdbcTemplate.update(query, message, producerUserId, currentTime);
     }

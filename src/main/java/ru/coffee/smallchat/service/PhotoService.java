@@ -6,6 +6,4 @@ public interface PhotoService {
     String savePhoto(String userId, MultipartFile photo);
 
     void deletePhoto(String userId);
-
-    void addPhotoToQueueForDelete(String photoPath);
 }

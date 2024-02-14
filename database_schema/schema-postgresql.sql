@@ -54,8 +54,8 @@ CREATE TABLE chats
     CONSTRAINT chats_consumer_id_fk FOREIGN KEY (consumer_user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
-CREATE INDEX chats_ix1_producer_user_session_id ON chats (producer_user_id);
-CREATE INDEX chats_ix2_consumer_user_session_id ON chats (consumer_user_id);
+CREATE INDEX chats_ix1_producer_user_id ON chats (producer_user_id);
+CREATE INDEX chats_ix2_consumer_user_id ON chats (consumer_user_id);
 
 /*------------------------------------------------------------------------------------------------------------------*/
 
@@ -93,13 +93,13 @@ CREATE SEQUENCE public_messages_id_seq
 CREATE TABLE public_messages
 (
     id                       bigint DEFAULT nextval('public_messages_id_seq') NOT NULL,
-    producer_user_session_id bigint                                           NOT NULL,
+    producer_user_id bigint                                           NOT NULL,
     message                  text                                             NOT NULL,
     send_time                timestamp                                        NOT NULL,
     deleted_at               timestamp,
 
     CONSTRAINT public_messages_pk PRIMARY KEY (id),
-    CONSTRAINT public_messages_producer_session_id_fk FOREIGN KEY (producer_user_session_id) REFERENCES users (id) ON DELETE CASCADE
+    CONSTRAINT public_messages_producer_id_fk FOREIGN KEY (producer_user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 /*------------------------------------------------------------------------------------------------------------------*/
@@ -125,7 +125,7 @@ BEGIN
 
     UPDATE public_messages
     SET deleted_at = NEW.deleted_at
-    WHERE producer_user_session_id = NEW.id;
+    WHERE producer_user_id = NEW.id;
 
     RETURN NEW;
 END;

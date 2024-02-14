@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @Data
-public class FileForDeleteDTO {
+public class UserForDeleteDTO {
     private String userId;
-    private LocalDateTime time;
+    private LocalDateTime timeDelete;
 }

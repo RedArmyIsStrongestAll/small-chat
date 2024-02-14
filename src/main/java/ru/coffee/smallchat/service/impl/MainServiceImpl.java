@@ -3,7 +3,9 @@ package ru.coffee.smallchat.service.impl;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.coffee.smallchat.dto.*;
@@ -18,22 +20,67 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class MainServiceImpl implements MainService {
 
+    private final ConcurrentLinkedQueue<UserForDeleteDTO> queue;
     private final MainRepository postgresRepository;
     private final PhotoService photoService;
     private final PrometheusMeterRegistry meterRegistry;
+    private final Long userLiveTimeMinutes;
 
     public MainServiceImpl(@Autowired PostgresMainRepositoryImpl postgresRepository,
                            @Autowired PhotoService photoService,
-                           @Autowired PrometheusMeterRegistry meterRegistry) {
+                           @Autowired PrometheusMeterRegistry meterRegistry,
+                           @Value("${user.live.time.minutes}") Long userLiveTimeMinutes) {
+        this.queue = new ConcurrentLinkedQueue<>();
         this.postgresRepository = postgresRepository;
         this.photoService = photoService;
         this.meterRegistry = meterRegistry;
+        this.userLiveTimeMinutes = userLiveTimeMinutes;
+    }
+
+    @Scheduled(fixedDelayString = "#{${user.live.time.minutes} * 1000 * 60}")
+    private void scheduledDeleteUser() {
+        try {
+            if (!queue.isEmpty()) {
+                UserForDeleteDTO userForDeleteDTO = queue.poll();
+                if (LocalDateTime.now().isAfter(userForDeleteDTO.getTimeDelete())) {
+                    Integer rawNameUpdate = postgresRepository.deleteUser(userForDeleteDTO.getUserId());
+                    if (rawNameUpdate != 1) {
+                        log.error("Id: " + userForDeleteDTO.getUserId());
+                        log.error("MainServiceImpl.scheduledDeleteUser - неожиданное поведение, " +
+                                "не удалился пользователь");
+                        meterRegistry.counter("error_in_service",
+                                "method", "scheduledDeleteUser",
+                                "id", userForDeleteDTO.getUserId()).increment();
+                    }
+                    photoService.deletePhoto(userForDeleteDTO.getUserId());
+                } else {
+                    queue.add(userForDeleteDTO);
+                }
+            }
+        } catch (DataAccessException e) {
+            log.error("MainServiceImpl.scheduledDeleteUser - " + e.getMessage());
+        }
+    }
+
+    public void addPUserToQueueForDelete(String userId) {
+        try {
+            LocalDateTime localDateTime = LocalDateTime.now().plusMinutes(userLiveTimeMinutes);
+            queue.add(new UserForDeleteDTO(userId, localDateTime));
+        } catch (Exception e) {
+            log.error("Id: " + userId);
+            log.error("MainServiceImpl.addPUserToQueueForDelete - " + e.getMessage());
+            meterRegistry.counter("error_in_service",
+                    "method", "addPUserToQueueForDelete",
+                    "id", userId).increment();
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -76,7 +123,6 @@ public class MainServiceImpl implements MainService {
                         "id", userId).increment();
                 return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
-            photoService.addPhotoToQueueForDelete(userId);
         }
 
         return new ResponseDTO<>(200, null);

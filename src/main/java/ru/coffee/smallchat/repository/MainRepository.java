@@ -19,6 +19,8 @@ public interface MainRepository {
 
     UserDTO getUserById(String userId);
 
+    Integer deleteUser(String userId);
+
     List<PublicMessageResponseDTO> getPublicHistory(Integer offset);
 
     List<ChatDTO> getPersonalChatProducerId(String userId);
