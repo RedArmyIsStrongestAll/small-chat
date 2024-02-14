@@ -1,7 +1,6 @@
 package ru.coffee.smallchat.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -12,18 +11,16 @@ import ru.coffee.smallchat.dto.PersonalMessageResponseDTO;
 import ru.coffee.smallchat.dto.PublicMessageResponseDTO;
 import ru.coffee.smallchat.service.MainService;
 
-import java.security.Principal;
-
 /***
  * регистрация /websocket/endpoint
  */
 @Controller
-public class WsController {
-    private MainService mainService;
-    private SimpMessagingTemplate messagingTemplate;
+public class WebsocketController {
+    private final MainService mainService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public WsController(@Autowired MainService mainService,
-                        @Autowired SimpMessagingTemplate messagingTemplate) {
+    public WebsocketController(@Autowired MainService mainService,
+                               @Autowired SimpMessagingTemplate messagingTemplate) {
         this.mainService = mainService;
         this.messagingTemplate = messagingTemplate;
     }
@@ -35,11 +32,11 @@ public class WsController {
      */
     @MessageMapping("public")
     @SendTo("/topic/public")
-    public PublicMessageResponseDTO sendPublicChat(@Payload String message,
-                                                   @Header("simpUser") Principal principalProducerUuid) {
-        PublicMessageResponseDTO returnMessage = mainService.savePublicMessage(message, principalProducerUuid.getName());
+    public PublicMessageResponseDTO sendPublicChat(@Payload String message) {
+        //todo principalProducerUuid.getName()
+        PublicMessageResponseDTO returnMessage = mainService.savePublicMessage(message, "principalProducerUuid.getName()");
         if (returnMessage == null) {
-            messagingTemplate.convertAndSendToUser(principalProducerUuid.getName(),
+            messagingTemplate.convertAndSendToUser("principalProducerUuid.getName()",
                     "/topic/public.error",
                     "Сообщение \"" + message + "\" не отправлено. Внутреняя ошибка сервера.");
         }
@@ -53,12 +50,12 @@ public class WsController {
      * ошибки /user/topic/private.error
      */
     @MessageMapping("personal")
-    public void sendPrivateChat(@Payload PersonalMessageRequestDTO message,
-                                @Header("simpUser") Principal principalProducerUuid) {
+    public void sendPersonalChat(@Payload PersonalMessageRequestDTO message) {
+        //todo principalProducerUuid.getName()
         PersonalMessageResponseDTO returnMessage = mainService.savePersonalMessage(message.getMessage(), message.getChatId(),
-                message.getConsumerUserUuid(), principalProducerUuid.getName());
+                message.getConsumerUserUuid(), "principalProducerUuid.getName()");
         if (returnMessage == null) {
-            messagingTemplate.convertAndSendToUser(principalProducerUuid.getName(),
+            messagingTemplate.convertAndSendToUser("principalProducerUuid.getName()",
                     "/topic/private.error",
                     "Сообщение \"" + message.getMessage() + "\" не отправлено. Внутреняя ошибка сервера.");
         } else {

@@ -3,33 +3,30 @@ package ru.coffee.smallchat.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.coffee.smallchat.dto.*;
 import ru.coffee.smallchat.service.MainService;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 
-@RestController("/chat")
-public class HttpController {
+@RestController()
+@RequestMapping("/chat")
+public class MainHttpController {
     private MainService mainService;
 
     @Autowired
-    public HttpController(MainService mainService) {
+    public MainHttpController(MainService mainService) {
         this.mainService = mainService;
     }
 
-    @PostMapping("/sign/in")
+    @PostMapping("/registry")
     @Operation(summary = "регистрация имени и фотография",
             description = "На сервере spring испльзуется @RequestParam анотация для MultipartFile класс для поля photo")
-    public Callable<ResponseDTO<String>> registry(HttpSession httpSession,
-                                                  @RequestParam(value = "photo", required = false) MultipartFile photo,
-                                                  @RequestParam(value = "name", required = false) String name) {
-        return () -> mainService.registry(name, photo, httpSession.getId());
+    public ResponseDTO<String> registry(HttpSession httpSession,
+                                        @RequestParam(value = "photo", required = false) MultipartFile photo,
+                                        @RequestParam(value = "name", required = false) String name) {
+        return mainService.registry(name, photo, httpSession.getId());
     }
 
     @GetMapping("/user")
