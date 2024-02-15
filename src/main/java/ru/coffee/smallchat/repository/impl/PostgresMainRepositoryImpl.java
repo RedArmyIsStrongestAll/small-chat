@@ -5,10 +5,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import ru.coffee.smallchat.dto.ChatDTO;
-import ru.coffee.smallchat.dto.PersonalMessageResponseDTO;
-import ru.coffee.smallchat.dto.PublicMessageResponseDTO;
-import ru.coffee.smallchat.dto.UserDTO;
+import ru.coffee.smallchat.dto.*;
+import ru.coffee.smallchat.entity.AbstractRegistry;
+import ru.coffee.smallchat.entity.OAuthRegistry;
 import ru.coffee.smallchat.repository.MainRepository;
 
 import java.sql.Types;
@@ -25,12 +24,20 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     }
 
     @Override
+    public Integer rigestryUser(AbstractRegistry type) throws DataAccessException {
+        OAuthRegistry registry = (OAuthRegistry) type;
+        String query = "insert into users (auth_id, auth_type_id) \n" +
+                "values (?, ?);";
+        return jdbcTemplate.update(query, registry.getId(), registry.getCodeType());
+    }
+
+    @Override
     @Transactional
     public Integer saveName(String name, String userId) throws DataAccessException {
         String query = "update users \n" +
                 "set name = ? \n" +
                 "where id = ?;";
-        return jdbcTemplate.update(query, name, userId);
+        return jdbcTemplate.update(query, name, Long.valueOf(userId));
     }
 
     @Override
@@ -39,7 +46,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         String query = "select us.photo_path \n" +
                 "from users us \n" +
                 "where us.id = ?;";
-        return jdbcTemplate.queryForObject(query, String.class, userId);
+        return jdbcTemplate.queryForObject(query, String.class, Long.valueOf(userId));
     }
 
     @Override
@@ -48,7 +55,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         String query = "update users \n" +
                 "set photo_path = ?, photo_type = ? \n" +
                 "where id = ?;";
-        return jdbcTemplate.update(query, path, type, userId);
+        return jdbcTemplate.update(query, path, type, Long.valueOf(userId));
     }
 
     @Override
@@ -57,7 +64,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         String query = "update users \n" +
                 "set photo_path = null \n" +
                 "where id = ?;";
-        return jdbcTemplate.update(query, userId);
+        return jdbcTemplate.update(query, Long.valueOf(userId));
     }
 
     @Override
@@ -75,7 +82,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         return jdbcTemplate.query(query, new Object[]{offset}, new int[]{Types.INTEGER},
                 (rs, ri) -> new PublicMessageResponseDTO(rs.getString("message"),
                         rs.getString("send_time"),
-                        rs.getString("producer_user_session_id")));
+                        String.valueOf(rs.getLong("producer_user_session_id"))));
     }
 
     @Override
@@ -95,10 +102,10 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                 "where c.producer_user_id = ? \n" +
                 "and c.consumer_user_id = ? \n" +
                 "and c.deleted_at is null \n";
-        return jdbcTemplate.queryForObject(query, new Object[]{producerUserId, consumerUserId},
-                new int[]{Types.CHAR, Types.CHAR},
+        return jdbcTemplate.queryForObject(query, new Object[]{Long.valueOf(producerUserId), Long.valueOf(consumerUserId)},
+                new int[]{Types.BIGINT, Types.BIGINT},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
-                        new UserDTO(rs.getString("producer_user_session_id"))));
+                        new UserDTO(String.valueOf(rs.getLong("producer_user_session_id")))));
     }
 
     @Transactional
@@ -107,9 +114,9 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                 "from chats c \n" +
                 "where c.producer_user_id = ? \n" +
                 "and c.deleted_at is null;";
-        return jdbcTemplate.query(query, new Object[]{userId}, new int[]{Types.CHAR},
+        return jdbcTemplate.query(query, new Object[]{Long.valueOf(userId)}, new int[]{Types.BIGINT},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
-                        new UserDTO(rs.getString("consumer_user_session_id"))));
+                        new UserDTO(String.valueOf(rs.getLong("consumer_user_session_id")))));
     }
 
     @Transactional
@@ -118,9 +125,9 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                 "from chats c \n" +
                 "where c.consumer_user_id = ? \n" +
                 "and c.deleted_at is null;";
-        return jdbcTemplate.query(query, new Object[]{userId}, new int[]{Types.CHAR},
+        return jdbcTemplate.query(query, new Object[]{Long.valueOf(userId)}, new int[]{Types.BIGINT},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
-                        new UserDTO(rs.getString("producer_user_session_id"))));
+                        new UserDTO(String.valueOf(rs.getLong("producer_user_session_id")))));
     }
 
     @Override
@@ -141,8 +148,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         return jdbcTemplate.query(query, new Object[]{chatId, offset}, new int[]{Types.BIGINT, Types.INTEGER},
                 (rs, ri) -> new PersonalMessageResponseDTO(rs.getString("message"),
                         rs.getString("send_time"),
-                        rs.getString("producer_user_session_id"),
-                        rs.getString("consumer_user_session_id"),
+                        String.valueOf(rs.getLong("producer_user_session_id")),
+                        String.valueOf(rs.getLong("consumer_user_session_id")),
                         null,
                         rs.getBoolean("sender_is_producer"),
                         null));
@@ -155,12 +162,22 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                 "from users us \n" +
                 "where us.id = ? \n" +
                 "and us.deleted_at is null;";
-        return jdbcTemplate.queryForObject(query, new Object[]{userId}, new int[]{Types.CHAR},
+        return jdbcTemplate.queryForObject(query, new Object[]{Long.valueOf(userId)}, new int[]{Types.BIGINT},
                 (rs, ri) -> new UserDTO(userId,
                         rs.getString("name"),
                         rs.getString("photo_path"),
                         null,
                         rs.getString("photo_type")));
+    }
+
+    @Transactional
+    public List<UserAuthDTO> getUserByAuthId(String authId) throws DataAccessException {
+        String query = "select us.id, us.deleted_at \n" +
+                "from users us \n" +
+                "where us.auth_id = ? \n;";
+        return jdbcTemplate.query(query, new Object[]{Long.valueOf(authId)}, new int[]{Types.BIGINT},
+                (rs, ri) -> new UserAuthDTO(String.valueOf(rs.getLong("id")),
+                        rs.getString("deleted_at")));
     }
 
     @Override
@@ -169,7 +186,15 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         String query = "update users \n" +
                 "set deleted_at = now() \n" +
                 "where id = ?;";
-        return jdbcTemplate.update(query, userId);
+        return jdbcTemplate.update(query, Long.valueOf(userId));
+    }
+
+    @Transactional
+    public Integer reDeleteUser(String userId) throws DataAccessException {
+        String query = "update users \n" +
+                "set deleted_at = null \n" +
+                "where id = ?;";
+        return jdbcTemplate.update(query, Long.valueOf(userId));
     }
 
     @Override
@@ -178,7 +203,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                                      LocalDateTime currentTime) throws DataAccessException {
         String query = "insert into public_messages (message, producer_user_id, send_time) \n" +
                 "values (?, ?, ?);";
-        return jdbcTemplate.update(query, message, producerUserId, currentTime);
+        return jdbcTemplate.update(query, message, Long.valueOf(producerUserId), currentTime);
     }
 
     @Override
@@ -196,6 +221,6 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         String query = "insert into chats (producer_user_id, consumer_user_id) \n" +
                 "values (?, ?) \n" +
                 "RETURNING id;";
-        return jdbcTemplate.queryForObject(query, Long.class, producerUserId, consumerUserId);
+        return jdbcTemplate.queryForObject(query, Long.class, Long.valueOf(producerUserId), Long.valueOf(consumerUserId));
     }
 }

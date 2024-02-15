@@ -20,11 +20,11 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/websocket/endpoint")
-                .setAllowedOrigins(env.getProperty("front.url"));
+                .setAllowedOrigins(env.getProperty("cors.url"));
 
 
         registry.addEndpoint("/websocket/endpoint")
-                .setAllowedOrigins(env.getProperty("front.url"))
+                .setAllowedOrigins(env.getProperty("cors.url"))
                 .withSockJS();
     }
 

@@ -33,6 +33,8 @@ public class SecurityConfig {
                                 //authenticated
                                 .anyRequest().authenticated())
                 .addFilterAfter(new JwtFilter(jwtFilter, meterRegistry), SessionManagementFilter.class)
+                .sessionManagement((session) ->
+                        session.maximumSessions(1))
         ;
         return http.build();
     }

@@ -7,6 +7,10 @@ CREATE TABLE auth_types
     CONSTRAINT auth_types_pk PRIMARY KEY (id)
 );
 
+INSERT INTO auth_types (name, description)
+VALUES ('vk id', 'Регистраниция через вк, одноклассники или mail.ru.' ||
+                 'Предосталвяется ООО "В КОНТАКТЕ" ОГРН 1079847035179');
+
 /*------------------------------------------------------------------------------------------------------------------*/
 
 CREATE SEQUENCE users_id_seq

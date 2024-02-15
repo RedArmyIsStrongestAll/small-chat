@@ -7,10 +7,10 @@ import java.util.Collections;
 
 public class UserIdAuthenticationToken extends AbstractAuthenticationToken {
     private static final long serialVersionUID = 620L;
-    private final Long id;
+    private final String id;
 
 
-    public UserIdAuthenticationToken(Long id) {
+    public UserIdAuthenticationToken(String id) {
         super(Collections.singletonList(new SimpleGrantedAuthority("no")));
         this.id = id;
     }

@@ -73,6 +73,7 @@ public class MainServiceImpl implements MainService {
         try {
             LocalDateTime localDateTime = LocalDateTime.now().plusMinutes(userLiveTimeMinutes);
             queue.add(new UserForDeleteDTO(userId, localDateTime));
+            //todo доп проверка на вход
         } catch (Exception e) {
             log.error("Id: " + userId);
             log.error("MainServiceImpl.addPUserToQueueForDelete - " + e.getMessage());

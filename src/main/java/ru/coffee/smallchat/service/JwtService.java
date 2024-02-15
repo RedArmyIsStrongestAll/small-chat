@@ -62,8 +62,7 @@ public class JwtService {
                     "method", "getAuthentication").increment();
             return null;
         }
-        Long id = Long.valueOf(sub);
-        return new UserIdAuthenticationToken(id);
+        return new UserIdAuthenticationToken(sub);
     }
 
     private <T> T getClaim(String token, Function<Claims, T> claimsResolver) {

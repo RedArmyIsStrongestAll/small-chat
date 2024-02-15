@@ -4,11 +4,14 @@ import ru.coffee.smallchat.dto.ChatDTO;
 import ru.coffee.smallchat.dto.PersonalMessageResponseDTO;
 import ru.coffee.smallchat.dto.PublicMessageResponseDTO;
 import ru.coffee.smallchat.dto.UserDTO;
+import ru.coffee.smallchat.entity.AbstractRegistry;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface MainRepository {
+    Integer rigestryUser(AbstractRegistry registry);
+
     Integer saveName(String name, String userId);
 
     String getPhotoPath(String userId);

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class OAuthRegistry implements AbstractRegistry {
     private Integer codeType;
+    private AbstractRigestryResponse oAuthResponse;
+    private Long id;
     private HttpServletResponse response;
-    private String token;
 }
