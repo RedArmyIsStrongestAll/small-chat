@@ -18,12 +18,13 @@ CREATE SEQUENCE users_id_seq
 
 CREATE TABLE users
 (
-    id           bigint DEFAULT nextval('users_id_seq') NOT NULL,
-    auth_id      bigint                                 NOT NULL,
-    auth_type_id int                                    NOT NULL,
+    id           bigint    DEFAULT nextval('users_id_seq') NOT NULL,
+    auth_id      bigint                                    NOT NULL,
+    auth_type_id int                                       NOT NULL,
     name         varchar(100),
     photo_path   text,
     photo_type   varchar(50),
+    created_at   timestamp DEFAULT now()                   NOT NULL,
     deleted_at   timestamp,
 
     CONSTRAINT users_pk PRIMARY KEY (id),
@@ -92,11 +93,11 @@ CREATE SEQUENCE public_messages_id_seq
 
 CREATE TABLE public_messages
 (
-    id                       bigint DEFAULT nextval('public_messages_id_seq') NOT NULL,
+    id               bigint DEFAULT nextval('public_messages_id_seq') NOT NULL,
     producer_user_id bigint                                           NOT NULL,
-    message                  text                                             NOT NULL,
-    send_time                timestamp                                        NOT NULL,
-    deleted_at               timestamp,
+    message          text                                             NOT NULL,
+    send_time        timestamp                                        NOT NULL,
+    deleted_at       timestamp,
 
     CONSTRAINT public_messages_pk PRIMARY KEY (id),
     CONSTRAINT public_messages_producer_id_fk FOREIGN KEY (producer_user_id) REFERENCES users (id) ON DELETE CASCADE

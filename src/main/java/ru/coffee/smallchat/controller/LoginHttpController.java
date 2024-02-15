@@ -1,27 +1,41 @@
 package ru.coffee.smallchat.controller;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import ru.coffee.smallchat.dto.ResponseDTO;
 import ru.coffee.smallchat.entity.OAuthRegistry;
-import ru.coffee.smallchat.service.LoginService;
+import ru.coffee.smallchat.service.impl.OAuthLoginServiceImpl;
 
+import java.net.URI;
+
+/**
+ * codeType:
+ * vk - 1
+ * ok - 2
+ * mail ru - 3
+ */
 @RestController()
 @RequestMapping("/login")
 public class LoginHttpController {
-    private LoginService loginService;
+    private OAuthLoginServiceImpl loginService;
 
     @Autowired
-    public LoginHttpController(LoginService loginService) {
+    public LoginHttpController(OAuthLoginServiceImpl loginService) {
         this.loginService = loginService;
+    }
+    //todo operation swagger
+
+    @GetMapping("/oauth")
+    public ResponseEntity<Void> sendToVk(@RequestParam(value = "codeType") Integer codeType) {
+        String location = loginService.forward(codeType);
+        return ResponseEntity.status(302).location(URI.create(location)).build();
     }
 
     @PostMapping("/vk")
-    //todo operation swagger
-    public ResponseDTO<Long> registryVk(@RequestBody() OAuthRegistry codeType) {
-        return loginService.login(1);
+    public ResponseDTO<Long> registryVk(HttpServletResponse response) {
+        OAuthRegistry registry = new OAuthRegistry(1, response, null);
+        return loginService.login(registry);
     }
 }

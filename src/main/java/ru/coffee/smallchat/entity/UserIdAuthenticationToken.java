@@ -1,6 +1,7 @@
 package ru.coffee.smallchat.entity;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.util.Collections;
 
@@ -10,7 +11,7 @@ public class UserIdAuthenticationToken extends AbstractAuthenticationToken {
 
 
     public UserIdAuthenticationToken(Long id) {
-        super(Collections.singletonList(null));
+        super(Collections.singletonList(new SimpleGrantedAuthority("no")));
         this.id = id;
     }
 
