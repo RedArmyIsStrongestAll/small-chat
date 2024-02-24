@@ -24,11 +24,13 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     }
 
     @Override
-    public Integer rigestryUser(AbstractRegistry type) throws DataAccessException {
+    public String rigestryUser(AbstractRegistry type) throws DataAccessException {
         OAuthRegistry registry = (OAuthRegistry) type;
         String query = "insert into users (auth_id, auth_type_id) \n" +
-                "values (?, ?);";
-        return jdbcTemplate.update(query, registry.getId(), registry.getCodeType());
+                "values (?, ?)" +
+                "RETURNING id;";
+        return jdbcTemplate.queryForObject(query, Long.class,
+                Long.valueOf(registry.getId()), registry.getCodeType()).toString();
     }
 
     @Override
@@ -82,7 +84,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         return jdbcTemplate.query(query, new Object[]{offset}, new int[]{Types.INTEGER},
                 (rs, ri) -> new PublicMessageResponseDTO(rs.getString("message"),
                         rs.getString("send_time"),
-                        String.valueOf(rs.getLong("producer_user_session_id"))));
+                        String.valueOf(rs.getLong("producer_user_id"))));
     }
 
     @Override
@@ -170,6 +172,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                         rs.getString("photo_type")));
     }
 
+    @Override
     @Transactional
     public List<UserAuthDTO> getUserByAuthId(String authId) throws DataAccessException {
         String query = "select us.id, us.deleted_at \n" +
@@ -182,6 +185,24 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
+    public Integer updateLastLoginTime(String userId) {
+        String query = "update users \n" +
+                "set last_login_at = now() \n" +
+                "where id = ?;";
+        return jdbcTemplate.update(query, Long.valueOf(userId));
+    }
+
+    @Override
+    public String getLastLoginTime(String userId) {
+        String query = "select us.last_login_at \n" +
+                "from users us \n" +
+                "where us.id = ? \n;";
+        return jdbcTemplate.queryForObject(query, new Object[]{Long.valueOf(userId)},
+                new int[]{Types.BIGINT}, String.class);
+    }
+
+    @Override
+    @Transactional
     public Integer deleteUser(String userId) throws DataAccessException {
         String query = "update users \n" +
                 "set deleted_at = now() \n" +
@@ -189,6 +210,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         return jdbcTemplate.update(query, Long.valueOf(userId));
     }
 
+
+    @Override
     @Transactional
     public Integer reDeleteUser(String userId) throws DataAccessException {
         String query = "update users \n" +

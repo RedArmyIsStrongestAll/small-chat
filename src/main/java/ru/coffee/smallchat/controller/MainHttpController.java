@@ -15,8 +15,7 @@ import java.util.List;
 public class MainHttpController {
     private MainService mainService;
 
-    @Autowired
-    public MainHttpController(MainService mainService) {
+    public MainHttpController(@Autowired MainService mainService) {
         this.mainService = mainService;
     }
 
@@ -26,12 +25,11 @@ public class MainHttpController {
 
     @PostMapping("/editProfile")
     @Operation(summary = "регистрация имени и фотография",
-            description = "На сервере spring испльзуется @RequestParam анотация для MultipartFile класс для поля photo")
+            description = "На сервере spring испльзуется @RequestParam анотация для MultipartFile класс для поля photo. <br/>" +
+                    "Для этого метода при успешном выполнение поле response = null, code = 200")
     public ResponseDTO<Void> editProfile(@RequestParam(value = "photo", required = false) MultipartFile photo,
                                          @RequestParam(value = "name", required = false) String name) {
         return mainService.editProfile(name, photo, getUserId().toString());
-        //todo в swagger комментарий что тут void вернется ResponseDTO<Void>
-        //todo + что есть необяхательные вроде не отмечается в swagger
     }
 
     @GetMapping("/user")
@@ -60,4 +58,5 @@ public class MainHttpController {
                                                                             @RequestParam("offset") Integer offset) {
         return mainService.getPersonalHistory(chatId, getUserId().toString(), offset);
     }
+
 }

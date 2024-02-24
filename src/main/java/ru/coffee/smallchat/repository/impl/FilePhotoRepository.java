@@ -15,12 +15,14 @@ public class FilePhotoRepository implements PhotoRepository {
 
     private final String savedPhotoDir;
 
-    public FilePhotoRepository(@Value("${saved.photo.dir}") String savedPhotoDir) {
+    public FilePhotoRepository(@Value("${saved.photo.dir}") String savedPhotoDir) throws IOException {
         if (savedPhotoDir.isEmpty()) {
             this.savedPhotoDir = System.getProperty("user.dir");
         } else {
             this.savedPhotoDir = savedPhotoDir;
         }
+        Path userPhotosDir = Path.of(savedPhotoDir, "user_photos");
+        Files.createDirectories(userPhotosDir);
     }
 
     @Override

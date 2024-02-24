@@ -32,23 +32,35 @@ public class MainServiceImpl implements MainService {
     private final PhotoService photoService;
     private final PrometheusMeterRegistry meterRegistry;
     private final Long userLiveTimeMinutes;
+    private final Long loginSessionTimeMinutes;
 
     public MainServiceImpl(@Autowired PostgresMainRepositoryImpl postgresRepository,
                            @Autowired PhotoService photoService,
                            @Autowired PrometheusMeterRegistry meterRegistry,
-                           @Value("${user.live.time.minutes}") Long userLiveTimeMinutes) {
+                           @Value("${user.live.time.minutes}") Long userLiveTimeMinutes,
+                           @Value("${jwt.live.time.minutes}") Long loginSessionTimeMinutes) {
         this.queue = new ConcurrentLinkedQueue<>();
         this.postgresRepository = postgresRepository;
         this.photoService = photoService;
         this.meterRegistry = meterRegistry;
         this.userLiveTimeMinutes = userLiveTimeMinutes;
+        this.loginSessionTimeMinutes = loginSessionTimeMinutes;
     }
 
     @Scheduled(fixedDelayString = "#{${user.live.time.minutes} * 1000 * 60}")
     private void scheduledDeleteUser() {
         try {
-            if (!queue.isEmpty()) {
+            while (!queue.isEmpty()) {
                 UserForDeleteDTO userForDeleteDTO = queue.poll();
+
+                String lastLoginDateTimeString = postgresRepository.getLastLoginTime(userForDeleteDTO.getUserId());
+                LocalDateTime lastLoginDateTime = convertStringToLocalDateTime(lastLoginDateTimeString);
+                if (LocalDateTime.now().minusMinutes(loginSessionTimeMinutes).isBefore(lastLoginDateTime)) {
+                    userForDeleteDTO.setTimeDelete(LocalDateTime.now().plusMinutes(userLiveTimeMinutes));
+                    queue.add(userForDeleteDTO);
+                    continue;
+                }
+
                 if (LocalDateTime.now().isAfter(userForDeleteDTO.getTimeDelete())) {
                     Integer rawNameUpdate = postgresRepository.deleteUser(userForDeleteDTO.getUserId());
                     if (rawNameUpdate != 1) {
@@ -62,18 +74,20 @@ public class MainServiceImpl implements MainService {
                     photoService.deletePhoto(userForDeleteDTO.getUserId());
                 } else {
                     queue.add(userForDeleteDTO);
+                    return;
                 }
             }
+
         } catch (DataAccessException e) {
             log.error("MainServiceImpl.scheduledDeleteUser - " + e.getMessage());
         }
     }
 
+    @Override
     public void addPUserToQueueForDelete(String userId) {
         try {
             LocalDateTime localDateTime = LocalDateTime.now().plusMinutes(userLiveTimeMinutes);
             queue.add(new UserForDeleteDTO(userId, localDateTime));
-            //todo доп проверка на вход
         } catch (Exception e) {
             log.error("Id: " + userId);
             log.error("MainServiceImpl.addPUserToQueueForDelete - " + e.getMessage());
@@ -214,8 +228,10 @@ public class MainServiceImpl implements MainService {
     private void setPhoto(UserDTO user, String userId) {
         try {
             String photoPath = user.getPhotoPath();
-            Path filePath = Path.of(photoPath);
-            user.setPhoto(Files.readAllBytes(filePath));
+            if (photoPath != null) {
+                Path filePath = Path.of(photoPath);
+                user.setPhoto(Files.readAllBytes(filePath));
+            }
         } catch (IOException e) {
             log.error("Id: " + userId);
             log.error("MainServiceImpl.setPhoto - " + e.getMessage());
@@ -376,5 +392,10 @@ public class MainServiceImpl implements MainService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
         LocalDateTime time = LocalDateTime.parse(dataTime, formatter);
         return time.format(DateTimeFormatter.ofPattern("HH:mm"));
+    }
+
+    private LocalDateTime convertStringToLocalDateTime(String dataTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
+        return LocalDateTime.parse(dataTime, formatter);
     }
 }

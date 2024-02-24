@@ -19,4 +19,6 @@ public interface MainService {
     PublicMessageResponseDTO savePublicMessage(String message, String producerUserId);
 
     PersonalMessageResponseDTO savePersonalMessage(String message, Long chatId, String consumerUserId, String producerUserId);
+
+    void addPUserToQueueForDelete(String userId);
 }

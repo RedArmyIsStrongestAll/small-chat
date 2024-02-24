@@ -4,49 +4,63 @@ package ru.coffee.smallchat.web_filter;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.filter.GenericFilterBean;
 import ru.coffee.smallchat.service.JwtService;
 
 import java.io.IOException;
 
 
 @Slf4j
-public class JwtFilter extends OncePerRequestFilter {
-    private static final String TOKEN_PREFIX = "Bearer ";
+public class JwtFilter extends GenericFilterBean {
     private final JwtService jwtService;
     private final PrometheusMeterRegistry meterRegistry;
+    private final String requestWebsocketURL;
 
     public JwtFilter(JwtService jwtService,
-                     PrometheusMeterRegistry meterRegistry) {
+                     PrometheusMeterRegistry meterRegistry,
+                     Environment environment) {
         this.jwtService = jwtService;
         this.meterRegistry = meterRegistry;
+        this.requestWebsocketURL = environment.getProperty("websocket.connect.url");
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-        String jwtToken = jwtService.getFromHeader(request);
-        if (jwtToken != null && jwtToken.startsWith(TOKEN_PREFIX)) {
-            jwtToken = jwtToken.replace(TOKEN_PREFIX, "");
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        String jwtToken = jwtService.getFromHeader((HttpServletRequest) servletRequest);
+        Authentication authentication = jwtParsing(jwtToken);
+        authentication.setAuthenticated(true);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+    public Authentication getAuthentication(String jwtToken) {
+        return jwtParsing(jwtToken);
+    }
+
+    private Authentication jwtParsing(String jwtToken) {
+        if (jwtToken != null && jwtToken.startsWith(JwtService.TOKEN_PREFIX)) {
+            jwtToken = jwtToken.replace(JwtService.TOKEN_PREFIX, "");
 
             if (jwtService.validation(jwtToken)) {
                 try {
                     Authentication authentication = jwtService.getAuthentication(jwtToken);
                     authentication.setAuthenticated(true);
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    return authentication;
                 } catch (Exception e) {
-                    log.error("JwtFilter.doFilterInternal - " + e.getMessage());
+                    log.error("JwtFilter.jwtParsing - " + e.getMessage());
                     meterRegistry.counter("error_in_service",
                             "method", "JwtFilter.doFilterInternal").increment();
                 }
             }
         }
-        filterChain.doFilter(request, response);
+        return null;
     }
 }
 

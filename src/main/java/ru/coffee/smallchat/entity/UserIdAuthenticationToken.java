@@ -7,17 +7,17 @@ import java.util.Collections;
 
 public class UserIdAuthenticationToken extends AbstractAuthenticationToken {
     private static final long serialVersionUID = 620L;
-    private final String id;
+    private final String userId;
 
 
-    public UserIdAuthenticationToken(String id) {
+    public UserIdAuthenticationToken(String userId) {
         super(Collections.singletonList(new SimpleGrantedAuthority("no")));
-        this.id = id;
+        this.userId = userId;
     }
 
     @Override
     public Object getPrincipal() {
-        return id;
+        return userId;
     }
 
     @Override

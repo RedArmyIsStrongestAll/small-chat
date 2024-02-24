@@ -1,16 +1,13 @@
 package ru.coffee.smallchat.repository;
 
-import ru.coffee.smallchat.dto.ChatDTO;
-import ru.coffee.smallchat.dto.PersonalMessageResponseDTO;
-import ru.coffee.smallchat.dto.PublicMessageResponseDTO;
-import ru.coffee.smallchat.dto.UserDTO;
+import ru.coffee.smallchat.dto.*;
 import ru.coffee.smallchat.entity.AbstractRegistry;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface MainRepository {
-    Integer rigestryUser(AbstractRegistry registry);
+    String rigestryUser(AbstractRegistry registry);
 
     Integer saveName(String name, String userId);
 
@@ -22,7 +19,15 @@ public interface MainRepository {
 
     UserDTO getUserById(String userId);
 
+    List<UserAuthDTO> getUserByAuthId(String userId);
+
+    Integer updateLastLoginTime(String userId);
+
+    String getLastLoginTime(String userId);
+
     Integer deleteUser(String userId);
+
+    Integer reDeleteUser(String userId);
 
     List<PublicMessageResponseDTO> getPublicHistory(Integer offset);
 

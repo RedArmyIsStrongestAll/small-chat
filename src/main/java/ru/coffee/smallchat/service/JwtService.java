@@ -21,13 +21,14 @@ import java.util.function.Function;
 @Service
 @Slf4j
 public class JwtService {
-    public static final String HEADER_STRING = "Authorization";
+    public static final String HEADER_NAME = "Authorization";
+    public static final String TOKEN_PREFIX = "Bearer ";
     private String secretKey;
     private Long timeToLiveToken;
     private final PrometheusMeterRegistry meterRegistry;
 
     public JwtService(@Autowired PrometheusMeterRegistry meterRegistry,
-                      @Value("${jwt.token.time.minutes}") Long timeToLiveToken,
+                      @Value("${jwt.live.time.minutes}") Long timeToLiveToken,
                       @Value("${jwt.token.secret.key}") String secretKey) {
         this.meterRegistry = meterRegistry;
         this.timeToLiveToken = timeToLiveToken * 1000 * 60;
@@ -38,11 +39,11 @@ public class JwtService {
         Claims claims = Jwts.claims().setSubject(userId)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + timeToLiveToken));
-        return Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS256, secretKey).compact();
+        return TOKEN_PREFIX + Jwts.builder().setClaims(claims).signWith(SignatureAlgorithm.HS256, secretKey).compact();
     }
 
     public String getFromHeader(HttpServletRequest req) {
-        return req.getHeader(HEADER_STRING);
+        return req.getHeader(HEADER_NAME);
     }
 
     public boolean validation(String jwtToken) {

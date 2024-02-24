@@ -22,14 +22,15 @@ CREATE SEQUENCE users_id_seq
 
 CREATE TABLE users
 (
-    id           bigint    DEFAULT nextval('users_id_seq') NOT NULL,
-    auth_id      bigint                                    NOT NULL,
-    auth_type_id int                                       NOT NULL,
-    name         varchar(100),
-    photo_path   text,
-    photo_type   varchar(50),
-    created_at   timestamp DEFAULT now()                   NOT NULL,
-    deleted_at   timestamp,
+    id            bigint    DEFAULT nextval('users_id_seq') NOT NULL,
+    auth_id       bigint                                    NOT NULL,
+    auth_type_id  int                                       NOT NULL,
+    name          varchar(100),
+    photo_path    text,
+    photo_type    varchar(50),
+    created_at    timestamp DEFAULT now()                   NOT NULL,
+    deleted_at    timestamp,
+    last_login_at timestamp DEFAULT now(),
 
     CONSTRAINT users_pk PRIMARY KEY (id),
     CONSTRAINT users_auth_type_id_fk FOREIGN KEY (auth_type_id) REFERENCES auth_types (id)

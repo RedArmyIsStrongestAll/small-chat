@@ -1,18 +1,17 @@
 package ru.coffee.smallchat.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletResponse;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import ru.coffee.smallchat.dto.OAuthRegistryResponseVkSilentTokenDTO;
+import ru.coffee.smallchat.dto.LoginDTO;
 import ru.coffee.smallchat.dto.ResponseDTO;
 import ru.coffee.smallchat.entity.OAuthRegistry;
-import ru.coffee.smallchat.service.impl.OAuthLoginServiceImpl;
+import ru.coffee.smallchat.service.LoginService;
 
 import java.net.URI;
 
@@ -23,36 +22,31 @@ import java.net.URI;
 @RestController()
 @RequestMapping("/login")
 public class LoginHttpController {
-    private final OAuthLoginServiceImpl loginService;
-    private final ObjectMapper objectMapper;
+    private final LoginService loginService;
 
-    @Autowired
-    public LoginHttpController(OAuthLoginServiceImpl loginService) {
+    public LoginHttpController(@Autowired LoginService loginService) {
         this.loginService = loginService;
-        this.objectMapper = new ObjectMapper();
     }
 
     @GetMapping("/oauth")
-    public ResponseEntity<Void> relocation(@RequestParam(value = "codeType") Integer codeType) {
-        String location = loginService.forward(codeType);
-        return ResponseEntity.status(302).location(URI.create(location)).build();
+    @Operation(summary = "переотправка на OAuth сервисы",
+            description = "codeType: <br/>" +
+                    "1 - VK ID")
+    public ResponseEntity<String> relocation(@RequestParam(value = "codeType") Integer codeType) {
+        String location = loginService.relocation(codeType);
+        if (location != null) {
+            return ResponseEntity.status(302).location(URI.create(location)).build();
+        } else {
+            return ResponseEntity.status(400).body("Ошибка переадрессации");
+        }
     }
 
     @GetMapping("/vk")
-    public ResponseEntity<String> registryVk(HttpServletResponse response,
-                                             @RequestParam("payload") String token) throws JsonProcessingException {
-        OAuthRegistryResponseVkSilentTokenDTO responseVkSilentTokenDTO;
-        try {
-            responseVkSilentTokenDTO = objectMapper.readValue(token, OAuthRegistryResponseVkSilentTokenDTO.class);
-        } catch (JsonProcessingException e) {
-            return ResponseEntity.status(500).body("Ошибка получения данных от VK ID");
-        }
-        OAuthRegistry registry = new OAuthRegistry(1, responseVkSilentTokenDTO, null, response);
-        ResponseDTO<Long> responseDTO = loginService.login(registry);
-        if (responseDTO.getCode().equals(302)) {
-            return ResponseEntity.status(302).location(URI.create(responseDTO.getError())).build();
-        } else {
-            return ResponseEntity.status(responseDTO.getCode()).body(responseDTO.getError());
-        }
+    @Operation(summary = "пряинтие VK ID токена",
+            description = "на этот метод переправляется сам VK ID, а сам метод переотпраивт пользовтаеля на главную страницу <br/>" +
+                    "полученный jwtToken необходимо передвать в заголовке Authorization для каждого запроса")
+    public ResponseDTO<LoginDTO> registryVk(@RequestParam("payload") String token) throws JsonProcessingException {
+        OAuthRegistry registry = new OAuthRegistry(1, token, null);
+        return loginService.login(registry);
     }
 }
