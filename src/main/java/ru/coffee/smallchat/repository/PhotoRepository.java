@@ -3,7 +3,7 @@ package ru.coffee.smallchat.repository;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface PhotoRepository {
-    String savePhoto(String userUuid, MultipartFile photo);
+    String savePhoto(String userId, MultipartFile photo);
 
-    void deletePhoto(String photoPath);
+    void deletePhoto(String userId);
 }

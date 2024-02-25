@@ -12,6 +12,6 @@ public class PublicMessageResponseDTO {
     private String message;
     @Schema(description = "время отправки сообщения (пример: \"13:37\" )")
     private String sendTime;
-    @Schema(description = "uuid отправителя")
-    private String producerUserUuid;
+    @Schema(description = "id отправителя")
+    private String producerUserId;
 }

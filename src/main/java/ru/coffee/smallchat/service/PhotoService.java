@@ -3,9 +3,7 @@ package ru.coffee.smallchat.service;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface PhotoService {
-    String savePhoto(String userUuid, MultipartFile photo);
+    String savePhoto(String userId, MultipartFile photo);
 
-    void deletePhoto(String photoPath);
-
-    void addPhotoToQueueForDelete(String photoPath);
+    void deletePhoto(String userId);
 }

@@ -12,14 +12,16 @@ public class PersonalMessageResponseDTO {
     private String message;
     @Schema(description = "время отправки (пример: \"13:37\" )")
     private String sendTime;
-    @Schema(description = "uuid отправителя")
-    private String producerUserUuid;
-    @Schema(description = "uuid получателя")
-    private String consumerUserUuid;
+    @Schema(description = "id отправителя")
+    private String producerUserId;
+    @Schema(description = "id получателя")
+    private String consumerUserId;
     @Schema(description = "id чата")
     private Long chatId;
-    @Schema(description = "флаг кому принадлежит сообщение в рамках этого чата: отпарвителю или получателю")
-    private Boolean senderIsProducer;
-    @Schema(description = "флаг является ли пользовтаель отправителем в рамках этого чата")
-    private Boolean itIsProducer;
+    @Schema(description = "флаг кто отправил сообщение в рамках этого чата: отпарвителю или получателю " +
+            "(для удобаства отображения сообщений)")
+    private Boolean senderIsProducerInChat;
+    @Schema(description = "флаг является ли пользовтаель отправителем в рамках этого чата " +
+            "(для получения истории)")
+    private Boolean userIsProducerInChat;
 }
