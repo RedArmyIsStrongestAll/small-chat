@@ -9,6 +9,7 @@ import org.springframework.stereotype.Controller;
 import ru.coffee.smallchat.dto.PersonalMessageRequestDTO;
 import ru.coffee.smallchat.dto.PersonalMessageResponseDTO;
 import ru.coffee.smallchat.dto.PublicMessageResponseDTO;
+import ru.coffee.smallchat.entity.WebsocketHeadersQueueEntity;
 import ru.coffee.smallchat.service.MainService;
 
 import java.security.Principal;
@@ -20,17 +21,20 @@ import java.security.Principal;
 public class WebsocketController {
     private final MainService mainService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final WebsocketHeadersQueueEntity headersForQueue;
 
     public WebsocketController(@Autowired MainService mainService,
-                               @Autowired SimpMessagingTemplate messagingTemplate) {
+                               @Autowired SimpMessagingTemplate messagingTemplate,
+                               @Autowired WebsocketHeadersQueueEntity headersForQueue) {
         this.mainService = mainService;
         this.messagingTemplate = messagingTemplate;
+        this.headersForQueue = headersForQueue;
     }
 
     /***
      * отправка /chat/send/public
      * получение /topic/public
-     * подписка на ошибки для отправителя /topic/public.error.{user_id}
+     * подписка на ошибки для отправителя /user/queue/public.error
      */
     @MessageMapping("public")
     public void sendPublicChat(@Payload String message,
@@ -38,9 +42,9 @@ public class WebsocketController {
         String userId = principalProducerUuid.getName();
         PublicMessageResponseDTO returnMessage = mainService.savePublicMessage(message, userId);
         if (returnMessage == null) {
-            messagingTemplate.convertAndSend(
-                    "/topic/public.error." + userId,
-                    "Сообщение \"" + message + "\" не отправлено. Внутреняя ошибка сервера.");
+            messagingTemplate.convertAndSendToUser(userId, "/queue/public.error",
+                    "Сообщение \"" + message + "\" не отправлено. Внутреняя ошибка сервера.",
+                    headersForQueue.getHeadersConsumer());
         }
         messagingTemplate.convertAndSend("/topic/public", returnMessage);
     }
@@ -48,8 +52,8 @@ public class WebsocketController {
 
     /***
      * отправка /chat/send/personal
-     * получение /topic/personal.{user_id}
-     * подписка на ошибки для отправителя /topic/private.error.{user_id}
+     * получение /user/queue/personal
+     * подписка на ошибки для отправителя /queue/private.error
      */
     @MessageMapping("personal")
     public void sendPersonalChat(@Payload PersonalMessageRequestDTO message,
@@ -58,12 +62,12 @@ public class WebsocketController {
         PersonalMessageResponseDTO returnMessage = mainService.savePersonalMessage(message.getMessage(), message.getChatId(),
                 message.getConsumerUserId(), userId);
         if (returnMessage == null) {
-            messagingTemplate.convertAndSend(
-                    "/topic/personal.error." + userId,
-                    "Сообщение \"" + message.getMessage() + "\" не отправлено. Внутреняя ошибка сервера.");
+            messagingTemplate.convertAndSendToUser(userId, "/queue/personal.error",
+                    "Сообщение \"" + message.getMessage() + "\" не отправлено. Внутреняя ошибка сервера.",
+                    headersForQueue.getHeadersPublisher());
         } else {
-            messagingTemplate.convertAndSend("/topic/personal." + message.getConsumerUserId(),
-                    returnMessage);
+            messagingTemplate.convertAndSendToUser(returnMessage.getConsumerUserId(), "/queue/personal",
+                    returnMessage, headersForQueue.getHeadersPublisher());
         }
     }
 }

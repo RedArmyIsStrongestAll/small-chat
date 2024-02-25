@@ -12,7 +12,6 @@ public class SwaggerConfig {
 
             "<h3> /websocket/endpoint </h3> " +
             "метод подклчения к ws портоколу <br/><br/>" +
-
             "НЕОБХОДИМО передавать jwt token в заголовке Authorization <br/><br/>" +
 
             "<h3> /chat/send/public </h3>" +
@@ -28,8 +27,7 @@ public class SwaggerConfig {
             "  \"producerUserId\": \"String\"\n" +
             "} <br/><br/>" +
 
-            "<h3> /topic/public.error.{user_id} </h3> " +
-            "например: /topic/public.error.1 <br/><br/>" +
+            "<h3> /user/queue/public.error </h3> " +
             "метод подписки на обшибки при отпарвке в общий чат <br/><br/>" +
             "возвращает объект: String <br/><br/>" +
 
@@ -42,8 +40,7 @@ public class SwaggerConfig {
             "  \"chatId\": Long\n" +
             "} <br/><br/>" +
 
-            "<h3> /topic/personal.{user_id} </h3>" +
-            "наприсер: /topic/personal.1 <br/><br/>" +
+            "<h3> /user/queue/personal </h3>" +
             "метод подписки на все личные чаты <br/><br/>" +
             "возвращает объект: <br/><br/> " +
             "{\n" +
@@ -52,15 +49,17 @@ public class SwaggerConfig {
             "  \"producerUserId\": \"String\",\n" +
             "  \"consumerUserId\": \"String\",\n" +
             "  \"chatId\": Long,\n" +
-            "  \"senderIsProducer\": Boolean\n" +
-            "  \"itIsProducer\": Boolean\n" +
+            "  \"senderIsProducerInChat\": false,\n" +
+            "  \"userIsProducerInChat\": false\n" +
             "}<br/><br/>" +
-            "(senderIsProducer - флаг кому принадлежит сообщение в рамках этого чата: отпарвителю или получателю) <br/><br/> " +
-            "(itIsProducer - флаг является ли пользовтаель отправителем в рамках этого чата) <br/><br/> " +
+            "(senderIsProducerInChat - флаг кто отправил сообщение в рамках этого чата: отпарвителю или получателю " +
+            "(для удобаства отображения сообщений)) <br/><br/> " +
+            "(userIsProducerInChat - флаг является ли пользовтаель отправителем в рамках этого чата " +
+            "(для получения истории)) <br/><br/> " +
 
-            "<h3> /user/topic/private.error.{user_id} </h3> " +
+            "<h3> /user/queue/private.error </h3> " +
             "метод подписки на обшибки при отпарвке в личные чат <br/><br/>" +
-            "возвращает объект: String ";
+            "возвращает объект: String <br/><br/>";
 
     String descriptionSeparator = "</br><br/> <br/><br/>";
 

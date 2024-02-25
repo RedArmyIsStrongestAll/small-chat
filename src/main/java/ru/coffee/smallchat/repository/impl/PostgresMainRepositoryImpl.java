@@ -89,47 +89,73 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public List<ChatDTO> getPersonalChatProducerId(String userId) throws DataAccessException {
-        List<ChatDTO> producerChatIdList = getPersonalChatIdListForProducer(userId);
-        List<ChatDTO> consumerChatIdList = getPersonalChatIdListForConsumer(userId);
+    public List<ChatDTO> getListPersonalChatByUserId(String userId) throws DataAccessException {
+        List<ChatDTO> producerChatIdList = getPersonalChatListByProducerId(userId);
+        List<ChatDTO> consumerChatIdList = getPersonalChatListByConsumerId(userId);
         producerChatIdList.addAll(consumerChatIdList);
         return producerChatIdList;
     }
 
     @Override
     @Transactional
-    public ChatDTO getPersonalChatProducerId(String producerUserId, String consumerUserId) throws DataAccessException {
-        String query = "select c.id, c.producer_user_id \n" +
-                "from chats c \n" +
-                "where c.producer_user_id = ? \n" +
-                "and c.consumer_user_id = ? \n" +
-                "and c.deleted_at is null \n";
-        return jdbcTemplate.queryForObject(query, new Object[]{Long.valueOf(producerUserId), Long.valueOf(consumerUserId)},
-                new int[]{Types.BIGINT, Types.BIGINT},
-                (rs, ri) -> new ChatDTO(rs.getLong("id"),
-                        new UserDTO(String.valueOf(rs.getLong("producer_user_session_id")))));
+    public ChatAdapterWithFlagProducerDTO getPersonalChatByUserIdAndChatId(Long chatId, String userId) throws DataAccessException {
+        ChatDTO chatUserProducer = getPersonalChatByProducerIdAndChatId(chatId, userId);
+        if (chatUserProducer.getPartnerUser().getUserId() != null) {
+            return new ChatAdapterWithFlagProducerDTO(chatUserProducer, true);
+        }
+        ChatDTO chatUserConsumer = getPersonalChatByConsumerIdAndChatId(chatId, userId);
+        if (chatUserConsumer.getPartnerUser().getUserId() != null) {
+            return new ChatAdapterWithFlagProducerDTO(chatUserConsumer, false);
+        }
+        return null;
     }
 
     @Transactional
-    public List<ChatDTO> getPersonalChatIdListForProducer(String userId) throws DataAccessException {
+    public ChatDTO getPersonalChatByProducerIdAndChatId(Long chatId, String producerId) throws DataAccessException {
+        String query = "select c.consumer_user_id \n" +
+                "from chats c \n" +
+                "where c.id = ?\n" +
+                "and c.producer_user_id = ?\n" +
+                "and c.deleted_at is null;";
+        return jdbcTemplate.queryForObject(query, new Object[]{chatId, Long.valueOf(producerId)},
+                new int[]{Types.BIGINT, Types.BIGINT},
+                (rs, ri) -> new ChatDTO(chatId,
+                        new UserDTO(String.valueOf(rs.getLong("consumer_user_id")))));
+    }
+
+    @Transactional
+    public ChatDTO getPersonalChatByConsumerIdAndChatId(Long chatId, String consumerId) throws DataAccessException {
+        String query = "select c.producer_user_id \n" +
+                "from chats c \n" +
+                "where c.id = ?\n" +
+                "and c.consumer_user_id = ?\n" +
+                "and c.deleted_at is null;";
+        return jdbcTemplate.queryForObject(query, new Object[]{chatId, Long.valueOf(consumerId)},
+                new int[]{Types.BIGINT, Types.BIGINT},
+                (rs, ri) -> new ChatDTO(chatId,
+                        new UserDTO(String.valueOf(rs.getLong("producer_user_id")))));
+    }
+
+    @Transactional
+    public List<ChatDTO> getPersonalChatListByProducerId(String userId) throws DataAccessException {
         String query = "select c.id, c.consumer_user_id \n" +
                 "from chats c \n" +
                 "where c.producer_user_id = ? \n" +
                 "and c.deleted_at is null;";
         return jdbcTemplate.query(query, new Object[]{Long.valueOf(userId)}, new int[]{Types.BIGINT},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
-                        new UserDTO(String.valueOf(rs.getLong("consumer_user_session_id")))));
+                        new UserDTO(String.valueOf(rs.getLong("consumer_user_id")))));
     }
 
     @Transactional
-    public List<ChatDTO> getPersonalChatIdListForConsumer(String userId) throws DataAccessException {
+    public List<ChatDTO> getPersonalChatListByConsumerId(String userId) throws DataAccessException {
         String query = "select c.id, c.producer_user_id \n" +
                 "from chats c \n" +
                 "where c.consumer_user_id = ? \n" +
                 "and c.deleted_at is null;";
         return jdbcTemplate.query(query, new Object[]{Long.valueOf(userId)}, new int[]{Types.BIGINT},
                 (rs, ri) -> new ChatDTO(rs.getLong("id"),
-                        new UserDTO(String.valueOf(rs.getLong("producer_user_session_id")))));
+                        new UserDTO(String.valueOf(rs.getLong("producer_user_id")))));
     }
 
     @Override
@@ -150,8 +176,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
         return jdbcTemplate.query(query, new Object[]{chatId, offset}, new int[]{Types.BIGINT, Types.INTEGER},
                 (rs, ri) -> new PersonalMessageResponseDTO(rs.getString("message"),
                         rs.getString("send_time"),
-                        String.valueOf(rs.getLong("producer_user_session_id")),
-                        String.valueOf(rs.getLong("consumer_user_session_id")),
+                        String.valueOf(rs.getLong("producer_user_id")),
+                        String.valueOf(rs.getLong("consumer_user_id")),
                         null,
                         rs.getBoolean("sender_is_producer"),
                         null));
@@ -232,7 +258,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     @Override
     @Transactional
     public Integer savePersonalMessage(String message, LocalDateTime currentTime,
-                                       Long chatId, String producerUserId, Boolean senderIsProducer) throws DataAccessException {
+                                       Long chatId, Boolean senderIsProducer) throws DataAccessException {
         String query = "insert into personal_messages (message, send_time, chat_id, sender_is_producer) \n" +
                 "values (?, ?, ?, ?);";
         return jdbcTemplate.update(query, message, currentTime, chatId, senderIsProducer);

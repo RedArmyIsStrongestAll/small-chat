@@ -18,8 +18,10 @@ public class PersonalMessageResponseDTO {
     private String consumerUserId;
     @Schema(description = "id чата")
     private Long chatId;
-    @Schema(description = "флаг кому принадлежит сообщение в рамках этого чата: отпарвителю или получателю")
-    private Boolean senderIsProducer;
-    @Schema(description = "флаг является ли пользовтаель отправителем в рамках этого чата")
-    private Boolean itIsProducer;
+    @Schema(description = "флаг кто отправил сообщение в рамках этого чата: отпарвителю или получателю " +
+            "(для удобаства отображения сообщений)")
+    private Boolean senderIsProducerInChat;
+    @Schema(description = "флаг является ли пользовтаель отправителем в рамках этого чата " +
+            "(для получения истории)")
+    private Boolean userIsProducerInChat;
 }

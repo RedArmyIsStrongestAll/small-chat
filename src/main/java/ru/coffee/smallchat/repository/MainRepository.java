@@ -31,16 +31,15 @@ public interface MainRepository {
 
     List<PublicMessageResponseDTO> getPublicHistory(Integer offset);
 
-    List<ChatDTO> getPersonalChatProducerId(String userId);
+    List<ChatDTO> getListPersonalChatByUserId(String userId);
 
-    ChatDTO getPersonalChatProducerId(String producerUserId, String consumerUserId);
+    ChatAdapterWithFlagProducerDTO getPersonalChatByUserIdAndChatId(Long chatId, String userId);
 
     List<PersonalMessageResponseDTO> getPersonalHistory(Long chatId, Integer offset);
 
     Integer savePublicMessage(String message, String producerUserId, LocalDateTime currentTime);
 
-    Integer savePersonalMessage(String message, LocalDateTime currentTime, Long chatId,
-                                String producerUserId, Boolean senderIsProducer);
+    Integer savePersonalMessage(String message, LocalDateTime currentTime, Long chatId, Boolean senderIsProducer);
 
     Long saveChat(String producerUserId, String consumerUserId);
 }

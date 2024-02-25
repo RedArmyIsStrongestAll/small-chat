@@ -19,6 +19,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -33,6 +35,7 @@ public class MainServiceImpl implements MainService {
     private final PrometheusMeterRegistry meterRegistry;
     private final Long userLiveTimeMinutes;
     private final Long loginSessionTimeMinutes;
+    private final DateTimeFormatter dateTimeFormatter;
 
     public MainServiceImpl(@Autowired PostgresMainRepositoryImpl postgresRepository,
                            @Autowired PhotoService photoService,
@@ -45,6 +48,10 @@ public class MainServiceImpl implements MainService {
         this.meterRegistry = meterRegistry;
         this.userLiveTimeMinutes = userLiveTimeMinutes;
         this.loginSessionTimeMinutes = loginSessionTimeMinutes;
+        this.dateTimeFormatter = new DateTimeFormatterBuilder()
+                .appendPattern("yyyy-MM-dd HH:mm:ss")
+                .appendFraction(ChronoField.MICRO_OF_SECOND, 0, 6, true)
+                .toFormatter();
     }
 
     @Scheduled(fixedDelayString = "#{${user.live.time.minutes} * 1000 * 60}")
@@ -262,7 +269,7 @@ public class MainServiceImpl implements MainService {
     @Override
     public ResponseDTO<List<ChatDTO>> getPersonalChatList(String userId) {
         try {
-            List<ChatDTO> privateChatList = postgresRepository.getPersonalChatProducerId(userId);
+            List<ChatDTO> privateChatList = postgresRepository.getListPersonalChatByUserId(userId);
 
             List<ChatDTO> returnList = privateChatList.stream().map((chatDTO) -> {
                 UserDTO user = postgresRepository.getUserById(chatDTO.getPartnerUser().getUserId());
@@ -291,7 +298,7 @@ public class MainServiceImpl implements MainService {
             List<PersonalMessageResponseDTO> messageList = postgresRepository.getPersonalHistory(chatId, offset);
             messageList.forEach(message -> {
                 Boolean itIsProducer = message.getProducerUserId().equals(userId);
-                message.setItIsProducer(itIsProducer);
+                message.setUserIsProducerInChat(itIsProducer);
                 message.setSendTime(convertTimeFromDatabase(message.getSendTime()));
             });
             return new ResponseDTO<>(200, messageList);
@@ -339,7 +346,6 @@ public class MainServiceImpl implements MainService {
             Boolean senderIsProducer;
             if (chatId == null) {
                 chatId = postgresRepository.saveChat(producerUserId, consumerUserId);
-                senderIsProducer = true;
                 if (chatId == null) {
                     log.error("Id: " + producerUserId);
                     log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
@@ -349,17 +355,24 @@ public class MainServiceImpl implements MainService {
                             "id", producerUserId).increment();
                     return null;
                 }
+                senderIsProducer = true;
             } else {
-                ChatDTO chatDTO = postgresRepository.getPersonalChatProducerId(producerUserId, consumerUserId);
-                if (chatDTO.getPartnerUser().getUserId().equals(producerUserId)) {
-                    senderIsProducer = true;
-                } else {
-                    senderIsProducer = false;
+                ChatAdapterWithFlagProducerDTO chatDTO = postgresRepository.getPersonalChatByUserIdAndChatId(chatId, producerUserId);
+                if (chatDTO == null) {
+                    log.error("Id: " + producerUserId);
+                    log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
+                            "не получен второй участник чата по chatId");
+                    meterRegistry.counter("error_in_controller",
+                            "method", "savePersonalMessage",
+                            "id", producerUserId).increment();
+                    return null;
                 }
+                consumerUserId = chatDTO.getChatDTO().getPartnerUser().getUserId();
+                senderIsProducer = chatDTO.getUserIsProducerInChat();
             }
 
             Integer rawInsertPersonalMessage = postgresRepository.savePersonalMessage(message, currentTime,
-                    chatId, producerUserId, senderIsProducer);
+                    chatId, senderIsProducer);
             if (rawInsertPersonalMessage != 1) {
                 log.error("Id: " + producerUserId);
                 log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
@@ -384,18 +397,15 @@ public class MainServiceImpl implements MainService {
     }
 
     private String convertDateTimeToDatabase(LocalDateTime currentTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
-        return currentTime.format(formatter);
+        return currentTime.format(dateTimeFormatter);
     }
 
     private String convertTimeFromDatabase(String dataTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
-        LocalDateTime time = LocalDateTime.parse(dataTime, formatter);
+        LocalDateTime time = LocalDateTime.parse(dataTime, dateTimeFormatter);
         return time.format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     private LocalDateTime convertStringToLocalDateTime(String dataTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
-        return LocalDateTime.parse(dataTime, formatter);
+        return LocalDateTime.parse(dataTime, dateTimeFormatter);
     }
 }

@@ -25,6 +25,6 @@ public class SessionHandshakeHandler extends DefaultHandshakeHandler {
         String jwtToken = request.getHeaders().getFirst(JwtService.HEADER_NAME);
         Authentication authentication = jwtFilter.getAuthentication(jwtToken);
 
-        return () -> authentication.getName();
+        return authentication != null ? () -> authentication.getName() : null;
     }
 }
