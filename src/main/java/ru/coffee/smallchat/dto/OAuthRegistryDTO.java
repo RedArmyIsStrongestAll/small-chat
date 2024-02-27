@@ -1,4 +1,4 @@
-package ru.coffee.smallchat.entity;
+package ru.coffee.smallchat.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class OAuthRegistry implements AbstractRegistry {
+public class OAuthRegistryDTO {
     private Integer codeType;
     private String oAuthResponse;
     private String id;

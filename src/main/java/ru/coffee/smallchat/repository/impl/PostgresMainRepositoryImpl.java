@@ -6,8 +6,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import ru.coffee.smallchat.dto.*;
-import ru.coffee.smallchat.entity.AbstractRegistry;
-import ru.coffee.smallchat.entity.OAuthRegistry;
 import ru.coffee.smallchat.repository.MainRepository;
 
 import java.sql.Types;
@@ -24,8 +22,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     }
 
     @Override
-    public String rigestryUser(AbstractRegistry type) throws DataAccessException {
-        OAuthRegistry registry = (OAuthRegistry) type;
+    public String rigestryUser(OAuthRegistryDTO registry) throws DataAccessException {
         String query = "insert into users (auth_id, auth_type_id) \n" +
                 "values (?, ?)" +
                 "RETURNING id;";

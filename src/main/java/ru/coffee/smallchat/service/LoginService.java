@@ -1,11 +1,13 @@
 package ru.coffee.smallchat.service;
 
-import ru.coffee.smallchat.dto.LoginDTO;
+import org.springframework.http.ResponseEntity;
+import ru.coffee.smallchat.dto.LoginRequestDTO;
+import ru.coffee.smallchat.dto.LoginResponseDTO;
+import ru.coffee.smallchat.dto.OAuthRegistryDTO;
 import ru.coffee.smallchat.dto.ResponseDTO;
-import ru.coffee.smallchat.entity.AbstractRegistry;
 
 public interface LoginService {
-    String relocation(Integer type);
+    ResponseEntity<String> relocation(LoginRequestDTO loginRequestDTO);
 
-    ResponseDTO<LoginDTO> login(AbstractRegistry registry);
+    ResponseDTO<LoginResponseDTO> login(OAuthRegistryDTO registry);
 }

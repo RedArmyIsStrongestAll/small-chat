@@ -6,7 +6,7 @@ import lombok.Data;
 
 @AllArgsConstructor
 @Data
-public class LoginDTO {
+public class LoginResponseDTO {
     @Schema(description = "id пользовтаеля")
     private String id;
     @Schema(description = "jwt token идентификации")

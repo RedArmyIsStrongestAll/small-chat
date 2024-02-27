@@ -6,22 +6,21 @@ import io.micrometer.prometheus.PrometheusMeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import ru.coffee.smallchat.dto.LoginDTO;
-import ru.coffee.smallchat.dto.OAuthRegistryResponseVkDTO;
-import ru.coffee.smallchat.dto.ResponseDTO;
-import ru.coffee.smallchat.dto.UserAuthDTO;
-import ru.coffee.smallchat.entity.AbstractRegistry;
-import ru.coffee.smallchat.entity.OAuthRegistry;
+import ru.coffee.smallchat.dto.*;
+import ru.coffee.smallchat.entity.GeolocationProperties;
 import ru.coffee.smallchat.entity.UserIdAuthenticationToken;
 import ru.coffee.smallchat.repository.MainRepository;
 import ru.coffee.smallchat.service.JwtService;
 import ru.coffee.smallchat.service.LoginService;
 import ru.coffee.smallchat.service.MainService;
 
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -33,31 +32,75 @@ public class OAuthLoginServiceImpl implements LoginService {
     private final MainRepository mainRepository;
     private final PrometheusMeterRegistry meterRegistry;
     private final ObjectMapper objectMapper;
-
+    private final GeolocationProperties geolocationProperties;
 
     public OAuthLoginServiceImpl(@Autowired MainService mainService,
                                  @Autowired JwtService jwtService,
                                  @Autowired Environment env,
                                  @Autowired MainRepository mainRepository,
-                                 @Autowired PrometheusMeterRegistry meterRegistry) {
+                                 @Autowired PrometheusMeterRegistry meterRegistry,
+                                 @Autowired GeolocationProperties geolocationProperties) {
         this.mainService = mainService;
         this.jwtService = jwtService;
         this.env = env;
         this.mainRepository = mainRepository;
         this.meterRegistry = meterRegistry;
         this.objectMapper = new ObjectMapper();
+        this.geolocationProperties = geolocationProperties;
     }
 
     @Override
-    public String relocation(Integer type) {
-        switch (type) {
-            case 1:
-                return relocationVk();
-            default:
-                log.warn("OAuthLoginServiceImpl.forward - неожиданное поведение," +
-                        "пришёл не существуюший код OAuth сервиса");
-                return null;
+    public ResponseEntity<String> relocation(LoginRequestDTO loginRequestDTO) {
+        if (!checkGeolocation(loginRequestDTO)) {
+            return ResponseEntity.status(400).body("Геолокация не соответствует обслуживаемым заведениям");
         }
+
+        String location = null;
+        switch (loginRequestDTO.getType()) {
+            case 1:
+                location = relocationVk();
+                break;
+        }
+
+        if (location != null) {
+            return ResponseEntity.status(302).location(URI.create(location)).build();
+        } else {
+            log.warn("OAuthLoginServiceImpl.forward - неожиданное поведение," +
+                    "пришёл не существуюший код OAuth сервиса");
+            return ResponseEntity.status(400).body("Ошибка переадрессации");
+        }
+    }
+
+    public Boolean checkGeolocation(LoginRequestDTO loginRequestDTO) {
+        try {
+            Map<String, GeolocationProperties.Coordinate> locations = geolocationProperties.getLocations();
+            for (Map.Entry<String, GeolocationProperties.Coordinate> entry : locations.entrySet()) {
+                GeolocationProperties.Coordinate coordinate = entry.getValue();
+                if (isWithinRadius(loginRequestDTO.getLatitude(), loginRequestDTO.getLongitude(),
+                        coordinate.getLatitude(), coordinate.getLongitude(),
+                        Double.valueOf(env.getProperty("radius.location.meters")))) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (IllegalArgumentException e) {
+            log.error("OAuthLoginServiceImpl.checkGeolocation - ошибка сравнения геолокации");
+            meterRegistry.counter("error_in_controller",
+                    "method", "relocation").increment();
+            return false;
+        }
+    }
+
+    private boolean isWithinRadius(Double lat1, Double lon1, Double lat2, Double lon2, Double radius) {
+        double earthRadius = 6371000.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double distance = earthRadius * c;
+        return distance <= radius;
     }
 
     private String relocationVk() {
@@ -72,9 +115,7 @@ public class OAuthLoginServiceImpl implements LoginService {
     }
 
     @Override
-    public ResponseDTO<LoginDTO> login(AbstractRegistry type) {
-        OAuthRegistry registry = (OAuthRegistry) type;
-
+    public ResponseDTO<LoginResponseDTO> login(OAuthRegistryDTO registry) {
         String oauthUserId;
         switch (registry.getCodeType()) {
             case 1:
@@ -98,7 +139,7 @@ public class OAuthLoginServiceImpl implements LoginService {
                 log.error("OAuthLoginServiceImpl.login - неожиданное поведение," +
                         "существует несколько разных пользовтаелей под один authId");
                 meterRegistry.counter("error_in_controller",
-                        "method", "login",
+                        "method", "relocation",
                         "id", userAuthDTOList.get(0).getUserId()).increment();
                 return new ResponseDTO<>(500, "Не получилось осуществить вход в систему");
             }
@@ -111,11 +152,11 @@ public class OAuthLoginServiceImpl implements LoginService {
             mainRepository.updateLastLoginTime(userId);
         }
 
-        Authentication authentication = new UserIdAuthenticationToken(oauthUserId);
+        Authentication authentication = new UserIdAuthenticationToken(userId);
         authentication.setAuthenticated(true);
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwtToken = jwtService.createToken(userId);
-        return new ResponseDTO<>(200, new LoginDTO(userId, jwtToken));
+        return new ResponseDTO<>(200, new LoginResponseDTO(userId, jwtToken));
     }
 
     private String parseVk(String token) {
@@ -126,7 +167,7 @@ public class OAuthLoginServiceImpl implements LoginService {
         } catch (JsonProcessingException e) {
             log.error("OAuthLoginServiceImpl.login - ошибка парсинга сообщения от VK ID");
             meterRegistry.counter("error_in_controller",
-                    "method", "login").increment();
+                    "method", "registryVk").increment();
             return null;
         }
         return registryVk.getUser().getId();

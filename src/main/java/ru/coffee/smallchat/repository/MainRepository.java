@@ -1,13 +1,12 @@
 package ru.coffee.smallchat.repository;
 
 import ru.coffee.smallchat.dto.*;
-import ru.coffee.smallchat.entity.AbstractRegistry;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface MainRepository {
-    String rigestryUser(AbstractRegistry registry);
+    String rigestryUser(OAuthRegistryDTO registry);
 
     Integer saveName(String name, String userId);
 

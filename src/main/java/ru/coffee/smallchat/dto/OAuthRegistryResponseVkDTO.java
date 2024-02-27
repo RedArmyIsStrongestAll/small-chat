@@ -3,12 +3,11 @@ package ru.coffee.smallchat.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.coffee.smallchat.entity.AbstractRigestryResponse;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class OAuthRegistryResponseVkDTO implements AbstractRigestryResponse {
+public class OAuthRegistryResponseVkDTO {
     private String type;
     private Integer auth;
     private User user;
