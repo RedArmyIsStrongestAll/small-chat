@@ -294,6 +294,18 @@ public class MainServiceImpl implements MainService {
     @Override
     public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId,
                                                                             String userId, Integer offset) {
+        List<ChatDTO> privateChatList = postgresRepository.getListPersonalChatByUserId(userId);
+        boolean isOwner = false;
+        for (ChatDTO chat : privateChatList) {
+            if (chat.getChatId().equals(chatId)) {
+                isOwner = true;
+            }
+        }
+        if (!isOwner) {
+            return new ResponseDTO<>(400, "Не разрешён доступ к чату, нужно быть участником чата," +
+                    "чтобы полуичть его сообщения");
+        }
+
         try {
             List<PersonalMessageResponseDTO> messageList = postgresRepository.getPersonalHistory(chatId, offset);
             messageList.forEach(message -> {
