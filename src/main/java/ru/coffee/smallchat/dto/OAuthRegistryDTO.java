@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 public class OAuthRegistryDTO {
-    private Integer codeType;
+    private int codeType;
     private String oAuthResponse;
     private String id;
 }

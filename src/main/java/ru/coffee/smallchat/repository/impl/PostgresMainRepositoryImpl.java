@@ -32,7 +32,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer saveName(String name, String userId) throws DataAccessException {
+    public int saveName(String name, String userId) throws DataAccessException {
         String query = "update users \n" +
                 "set name = ? \n" +
                 "where id = ?;";
@@ -50,7 +50,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer savePhotoPath(String path, String type, String userId) throws DataAccessException {
+    public int savePhotoPath(String path, String type, String userId) throws DataAccessException {
         String query = "update users \n" +
                 "set photo_path = ?, photo_type = ? \n" +
                 "where id = ?;";
@@ -59,7 +59,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer deletePhotoPath(String userId) throws DataAccessException {
+    public int deletePhotoPath(String userId) throws DataAccessException {
         String query = "update users \n" +
                 "set photo_path = null \n" +
                 "where id = ?;";
@@ -68,7 +68,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public List<PublicMessageResponseDTO> getPublicHistory(Integer offset) throws DataAccessException {
+    public List<PublicMessageResponseDTO> getPublicHistory(int offset) throws DataAccessException {
         offset = offset * 50;
         String query = "select pm.message, \n" +
                 "pm.producer_user_id, \n" +
@@ -95,41 +95,43 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public ChatAdapterWithFlagProducerDTO getPersonalChatByUserIdAndChatId(Long chatId, String userId) throws DataAccessException {
-        ChatDTO chatUserProducer = getPersonalChatByProducerIdAndChatId(chatId, userId);
-        if (chatUserProducer.getPartnerUser().getUserId() != null) {
-            return new ChatAdapterWithFlagProducerDTO(chatUserProducer, true);
+    public ChatAdapterWithFlagProducerDTO getPersonalChatByUserIdAndChatId(long chatId, String userId) throws DataAccessException {
+        List<ChatDTO> chatUserProducerList = getPersonalChatByProducerIdAndChatId(chatId, userId);
+        if (!chatUserProducerList.isEmpty() &&
+                chatUserProducerList.get(0).getPartnerUser().getUserId() != null) {
+            return new ChatAdapterWithFlagProducerDTO(chatUserProducerList.get(0), true);
         }
-        ChatDTO chatUserConsumer = getPersonalChatByConsumerIdAndChatId(chatId, userId);
-        if (chatUserConsumer.getPartnerUser().getUserId() != null) {
-            return new ChatAdapterWithFlagProducerDTO(chatUserConsumer, false);
+        List<ChatDTO> chatUserConsumerList = getPersonalChatByConsumerIdAndChatId(chatId, userId);
+        if (!chatUserConsumerList.isEmpty() &&
+                chatUserConsumerList.get(0).getPartnerUser().getUserId() != null) {
+            return new ChatAdapterWithFlagProducerDTO(chatUserConsumerList.get(0), false);
         }
         return null;
     }
 
     @Transactional
-    public ChatDTO getPersonalChatByProducerIdAndChatId(Long chatId, String producerId) throws DataAccessException {
+    public List<ChatDTO> getPersonalChatByProducerIdAndChatId(long chatId, String producerId) throws DataAccessException {
         String query = "select c.consumer_user_id \n" +
                 "from chats c \n" +
                 "where c.id = ?\n" +
                 "and c.producer_user_id = ?\n" +
                 "and c.deleted_at is null;";
-        return jdbcTemplate.queryForObject(query, new Object[]{chatId, Long.valueOf(producerId)},
+        return jdbcTemplate.query(query, new Object[]{chatId, Long.valueOf(producerId)},
                 new int[]{Types.BIGINT, Types.BIGINT},
-                (rs, ri) -> new ChatDTO(chatId,
+                (rs, rowNum) -> new ChatDTO(chatId,
                         new UserDTO(String.valueOf(rs.getLong("consumer_user_id")))));
     }
 
     @Transactional
-    public ChatDTO getPersonalChatByConsumerIdAndChatId(Long chatId, String consumerId) throws DataAccessException {
+    public List<ChatDTO> getPersonalChatByConsumerIdAndChatId(long chatId, String consumerId) throws DataAccessException {
         String query = "select c.producer_user_id \n" +
                 "from chats c \n" +
                 "where c.id = ?\n" +
                 "and c.consumer_user_id = ?\n" +
                 "and c.deleted_at is null;";
-        return jdbcTemplate.queryForObject(query, new Object[]{chatId, Long.valueOf(consumerId)},
+        return jdbcTemplate.query(query, new Object[]{chatId, Long.valueOf(consumerId)},
                 new int[]{Types.BIGINT, Types.BIGINT},
-                (rs, ri) -> new ChatDTO(chatId,
+                (rs, rowNum) -> new ChatDTO(chatId,
                         new UserDTO(String.valueOf(rs.getLong("producer_user_id")))));
     }
 
@@ -156,7 +158,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
     }
 
     @Override
-    public List<PersonalMessageResponseDTO> getPersonalHistory(Long chatId, Integer offset) throws DataAccessException {
+    public List<PersonalMessageResponseDTO> getPersonalHistory(long chatId, int offset) throws DataAccessException {
         offset = offset * 50;
         String query = "select pm.message, \n" +
                 "c.producer_user_id, \n" +
@@ -175,7 +177,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                         rs.getString("send_time"),
                         String.valueOf(rs.getLong("producer_user_id")),
                         String.valueOf(rs.getLong("consumer_user_id")),
-                        null,
+                        chatId,
                         rs.getBoolean("sender_is_producer"),
                         null));
     }
@@ -208,7 +210,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer updateLastLoginTime(String userId) {
+    public int updateLastLoginTime(String userId) {
         String query = "update users \n" +
                 "set last_login_at = now() \n" +
                 "where id = ?;";
@@ -226,7 +228,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer deleteUser(String userId) throws DataAccessException {
+    public int deleteUser(String userId) throws DataAccessException {
         String query = "update users \n" +
                 "set deleted_at = now() \n" +
                 "where id = ?;";
@@ -236,7 +238,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer reDeleteUser(String userId) throws DataAccessException {
+    public int reDeleteUser(String userId) throws DataAccessException {
         String query = "update users \n" +
                 "set deleted_at = null \n" +
                 "where id = ?;";
@@ -245,8 +247,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer savePublicMessage(String message, String producerUserId,
-                                     LocalDateTime currentTime) throws DataAccessException {
+    public int savePublicMessage(String message, String producerUserId,
+                                 LocalDateTime currentTime) throws DataAccessException {
         String query = "insert into public_messages (message, producer_user_id, send_time) \n" +
                 "values (?, ?, ?);";
         return jdbcTemplate.update(query, message, Long.valueOf(producerUserId), currentTime);
@@ -254,8 +256,8 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Integer savePersonalMessage(String message, LocalDateTime currentTime,
-                                       Long chatId, Boolean senderIsProducer) throws DataAccessException {
+    public int savePersonalMessage(String message, LocalDateTime currentTime,
+                                   long chatId, boolean senderIsProducer) throws DataAccessException {
         String query = "insert into personal_messages (message, send_time, chat_id, sender_is_producer) \n" +
                 "values (?, ?, ?, ?);";
         return jdbcTemplate.update(query, message, currentTime, chatId, senderIsProducer);
@@ -263,7 +265,7 @@ public class PostgresMainRepositoryImpl implements MainRepository {
 
     @Override
     @Transactional
-    public Long saveChat(String producerUserId, String consumerUserId) throws DataAccessException {
+    public long saveChat(String producerUserId, String consumerUserId) throws DataAccessException {
         String query = "insert into chats (producer_user_id, consumer_user_id) \n" +
                 "values (?, ?) \n" +
                 "RETURNING id;";

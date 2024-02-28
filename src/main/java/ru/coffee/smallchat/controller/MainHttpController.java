@@ -41,7 +41,7 @@ public class MainHttpController {
     @GetMapping("/public/history")
     @Operation(summary = "поулчение истории общего чата",
             description = "offset начинается с 0")
-    public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(@RequestParam("offset") Integer offset) {
+    public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(@RequestParam("offset") int offset) {
         return mainService.getPublicHistory(getUserId().toString(), offset);
     }
 
@@ -54,8 +54,8 @@ public class MainHttpController {
     @GetMapping("/personal/history")
     @Operation(summary = "поулчение истории личного чата",
             description = "offset начинается с 0")
-    public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(@RequestParam("chatId") Long chatId,
-                                                                            @RequestParam("offset") Integer offset) {
+    public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(@RequestParam("chatId") long chatId,
+                                                                            @RequestParam("offset") int offset) {
         return mainService.getPersonalHistory(chatId, getUserId().toString(), offset);
     }
 

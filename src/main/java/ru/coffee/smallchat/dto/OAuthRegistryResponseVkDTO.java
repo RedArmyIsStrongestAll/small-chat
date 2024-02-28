@@ -9,13 +9,13 @@ import lombok.NoArgsConstructor;
 @Data
 public class OAuthRegistryResponseVkDTO {
     private String type;
-    private Integer auth;
+    private int auth;
     private User user;
     private Object token;
-    private Integer ttl;
+    private int ttl;
     private String uuid;
     private String hash;
-    private Boolean loadExternalUsers;
+    private boolean loadExternalUsers;
 
     @NoArgsConstructor
     @AllArgsConstructor

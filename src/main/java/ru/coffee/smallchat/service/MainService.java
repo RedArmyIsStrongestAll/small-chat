@@ -10,11 +10,11 @@ public interface MainService {
 
     ResponseDTO<UserDTO> getUserById(String lookingUserId, String userId);
 
-    ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userId, Integer offset);
+    ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userId, int offset);
 
     ResponseDTO<List<ChatDTO>> getPersonalChatList(String userId);
 
-    ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId, String userId, Integer offset);
+    ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(long chatId, String userId, int offset);
 
     PublicMessageResponseDTO savePublicMessage(String message, String producerUserId);
 

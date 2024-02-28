@@ -9,7 +9,7 @@ import lombok.Data;
 @Schema(description = "объект чата")
 public class ChatDTO {
     @Schema(description = "id чата")
-    private Long chatId;
+    private long chatId;
     @Schema(description = "объект собеседника по чату")
     private UserDTO partnerUser;
 }

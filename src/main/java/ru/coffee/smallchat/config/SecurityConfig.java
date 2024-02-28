@@ -3,7 +3,6 @@ package ru.coffee.smallchat.config;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -18,9 +17,8 @@ public class SecurityConfig {
 
     @Bean
     public JwtFilter jwtFilter(JwtService jwtFilter,
-                               PrometheusMeterRegistry meterRegistry,
-                               Environment environment) {
-        return new JwtFilter(jwtFilter, meterRegistry, environment);
+                               PrometheusMeterRegistry meterRegistry) {
+        return new JwtFilter(jwtFilter, meterRegistry);
     }
 
     @Bean

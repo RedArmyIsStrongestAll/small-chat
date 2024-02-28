@@ -33,15 +33,15 @@ public class MainServiceImpl implements MainService {
     private final MainRepository postgresRepository;
     private final PhotoService photoService;
     private final PrometheusMeterRegistry meterRegistry;
-    private final Long userLiveTimeMinutes;
-    private final Long loginSessionTimeMinutes;
+    private final long userLiveTimeMinutes;
+    private final long loginSessionTimeMinutes;
     private final DateTimeFormatter dateTimeFormatter;
 
     public MainServiceImpl(@Autowired PostgresMainRepositoryImpl postgresRepository,
                            @Autowired PhotoService photoService,
                            @Autowired PrometheusMeterRegistry meterRegistry,
-                           @Value("${user.live.time.minutes}") Long userLiveTimeMinutes,
-                           @Value("${jwt.live.time.minutes}") Long loginSessionTimeMinutes) {
+                           @Value("${user.live.time.minutes}") long userLiveTimeMinutes,
+                           @Value("${jwt.live.time.minutes}") long loginSessionTimeMinutes) {
         this.queue = new ConcurrentLinkedQueue<>();
         this.postgresRepository = postgresRepository;
         this.photoService = photoService;
@@ -69,7 +69,7 @@ public class MainServiceImpl implements MainService {
                 }
 
                 if (LocalDateTime.now().isAfter(userForDeleteDTO.getTimeDelete())) {
-                    Integer rawNameUpdate = postgresRepository.deleteUser(userForDeleteDTO.getUserId());
+                    int rawNameUpdate = postgresRepository.deleteUser(userForDeleteDTO.getUserId());
                     if (rawNameUpdate != 1) {
                         log.error("Id: " + userForDeleteDTO.getUserId());
                         log.error("MainServiceImpl.scheduledDeleteUser - неожиданное поведение, " +
@@ -108,7 +108,7 @@ public class MainServiceImpl implements MainService {
     @Override
     public ResponseDTO<Void> editProfile(String name, MultipartFile photo, String userId) {
         sleepToFilledInDataBase(userId);
-        Integer rawNameUpdate = saveUserName(name, userId);
+        int rawNameUpdate = saveUserName(name, userId);
         if (rawNameUpdate != 1) {
             log.error("Id: " + userId);
             log.error("MainServiceImpl.saveUser - неожиданное поведение, " +
@@ -135,7 +135,7 @@ public class MainServiceImpl implements MainService {
                         "id", userId).increment();
                 return new ResponseDTO<>(400, "Не сохранено изображение на сервере");
             }
-            Integer rawPhotoUpdate = saveUserPhotoPath(photoPath, photo.getContentType(), userId);
+            int rawPhotoUpdate = saveUserPhotoPath(photoPath, photo.getContentType(), userId);
             if (rawPhotoUpdate < 1) {
                 log.error("Id: " + userId);
                 log.error("MainServiceImpl.registry - неожиданное поведение, " +
@@ -162,7 +162,7 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    private Integer saveUserName(String name, String userId) {
+    private int saveUserName(String name, String userId) {
         try {
             return postgresRepository.saveName(name, userId);
         } catch (DataAccessException e) {
@@ -185,7 +185,7 @@ public class MainServiceImpl implements MainService {
         }
     }
 
-    private Integer saveUserPhotoPath(String path, String type, String userId) {
+    private int saveUserPhotoPath(String path, String type, String userId) {
         try {
             return postgresRepository.savePhotoPath(path, type, userId);
         } catch (DataAccessException e) {
@@ -197,7 +197,7 @@ public class MainServiceImpl implements MainService {
 
     private void deleteUserPhotoPath(String userId) {
         try {
-            Integer rawDelete = postgresRepository.deletePhotoPath(userId);
+            int rawDelete = postgresRepository.deletePhotoPath(userId);
             if (rawDelete != 1) {
                 log.error("Id: " + userId);
                 log.error("MainServiceImpl.deleteUserPhotoPath - неожиданное поведение, " +
@@ -249,7 +249,7 @@ public class MainServiceImpl implements MainService {
     }
 
     @Override
-    public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userId, Integer offset) {
+    public ResponseDTO<List<PublicMessageResponseDTO>> getPublicHistory(String userId, int offset) {
         try {
             List<PublicMessageResponseDTO> messageList = postgresRepository.getPublicHistory(offset);
             messageList.forEach(message -> {
@@ -292,13 +292,13 @@ public class MainServiceImpl implements MainService {
     }
 
     @Override
-    public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(Long chatId,
-                                                                            String userId, Integer offset) {
+    public ResponseDTO<List<PersonalMessageResponseDTO>> getPersonalHistory(long chatId, String userId, int offset) {
         List<ChatDTO> privateChatList = postgresRepository.getListPersonalChatByUserId(userId);
         boolean isOwner = false;
         for (ChatDTO chat : privateChatList) {
-            if (chat.getChatId().equals(chatId)) {
+            if (chat.getChatId() == chatId) {
                 isOwner = true;
+                break;
             }
         }
         if (!isOwner) {
@@ -328,7 +328,7 @@ public class MainServiceImpl implements MainService {
     public PublicMessageResponseDTO savePublicMessage(String message, String producerUserId) {
         try {
             LocalDateTime currentTime = LocalDateTime.now();
-            Integer rawInsert = postgresRepository.savePublicMessage(message, producerUserId, currentTime);
+            int rawInsert = postgresRepository.savePublicMessage(message, producerUserId, currentTime);
             if (rawInsert != 1) {
                 log.error("Id: " + producerUserId);
                 log.error("MainServiceImpl.savePublicMessage - неожиданное поведение, " +
@@ -355,10 +355,11 @@ public class MainServiceImpl implements MainService {
         try {
             LocalDateTime currentTime = LocalDateTime.now();
 
-            Boolean senderIsProducer;
+            boolean senderIsProducer;
             if (chatId == null) {
-                chatId = postgresRepository.saveChat(producerUserId, consumerUserId);
-                if (chatId == null) {
+                try {
+                    chatId = postgresRepository.saveChat(producerUserId, consumerUserId);
+                } catch (Exception e) {
                     log.error("Id: " + producerUserId);
                     log.error("MainServiceImpl.savePersonalMessage - неожиданное поведение, " +
                             "не сохранён новый чат в таблицу chats");
@@ -380,10 +381,10 @@ public class MainServiceImpl implements MainService {
                     return null;
                 }
                 consumerUserId = chatDTO.getChatDTO().getPartnerUser().getUserId();
-                senderIsProducer = chatDTO.getUserIsProducerInChat();
+                senderIsProducer = chatDTO.isUserIsProducerInChat();
             }
 
-            Integer rawInsertPersonalMessage = postgresRepository.savePersonalMessage(message, currentTime,
+            int rawInsertPersonalMessage = postgresRepository.savePersonalMessage(message, currentTime,
                     chatId, senderIsProducer);
             if (rawInsertPersonalMessage != 1) {
                 log.error("Id: " + producerUserId);

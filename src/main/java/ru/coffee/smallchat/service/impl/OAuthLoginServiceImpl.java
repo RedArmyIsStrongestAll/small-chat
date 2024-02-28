@@ -91,7 +91,7 @@ public class OAuthLoginServiceImpl implements LoginService {
         }
     }
 
-    private boolean isWithinRadius(Double lat1, Double lon1, Double lat2, Double lon2, Double radius) {
+    private boolean isWithinRadius(double lat1, double lon1, double lat2, double lon2, double radius) {
         double earthRadius = 6371000.0;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);

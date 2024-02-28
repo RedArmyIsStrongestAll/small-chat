@@ -8,7 +8,6 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
@@ -21,14 +20,11 @@ import java.io.IOException;
 public class JwtFilter extends GenericFilterBean {
     private final JwtService jwtService;
     private final PrometheusMeterRegistry meterRegistry;
-    private final String requestWebsocketURL;
 
     public JwtFilter(JwtService jwtService,
-                     PrometheusMeterRegistry meterRegistry,
-                     Environment environment) {
+                     PrometheusMeterRegistry meterRegistry) {
         this.jwtService = jwtService;
         this.meterRegistry = meterRegistry;
-        this.requestWebsocketURL = environment.getProperty("websocket.connect.url");
     }
 
     @Override

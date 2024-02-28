@@ -18,7 +18,7 @@ public class ResponseDTO<T> {
     }
 
     @Schema(description = "код http ответа")
-    private Integer code;
+    private int code;
     @Schema(description = "текст ошибки")
     private String error;
     @Schema(description = "объект ответа")

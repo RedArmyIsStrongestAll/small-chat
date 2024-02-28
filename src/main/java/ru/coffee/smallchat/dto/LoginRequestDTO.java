@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 @Data
 public class LoginRequestDTO {
     @Schema(description = "тип аутентификации (id oauth сервиса)")
-    private Integer type;
+    private int type;
     @Schema(description = "широта gps")
-    private Double latitude;
+    private double latitude;
     @Schema(description = "долгота gps")
-    private Double longitude;
+    private double longitude;
 }

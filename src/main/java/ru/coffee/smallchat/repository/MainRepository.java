@@ -8,37 +8,37 @@ import java.util.List;
 public interface MainRepository {
     String rigestryUser(OAuthRegistryDTO registry);
 
-    Integer saveName(String name, String userId);
+    int saveName(String name, String userId);
 
     String getPhotoPath(String userId);
 
-    Integer savePhotoPath(String path, String type, String userId);
+    int savePhotoPath(String path, String type, String userId);
 
-    Integer deletePhotoPath(String userId);
+    int deletePhotoPath(String userId);
 
     UserDTO getUserById(String userId);
 
     List<UserAuthDTO> getUserByAuthId(String userId);
 
-    Integer updateLastLoginTime(String userId);
+    int updateLastLoginTime(String userId);
 
     String getLastLoginTime(String userId);
 
-    Integer deleteUser(String userId);
+    int deleteUser(String userId);
 
-    Integer reDeleteUser(String userId);
+    int reDeleteUser(String userId);
 
-    List<PublicMessageResponseDTO> getPublicHistory(Integer offset);
+    List<PublicMessageResponseDTO> getPublicHistory(int offset);
 
     List<ChatDTO> getListPersonalChatByUserId(String userId);
 
-    ChatAdapterWithFlagProducerDTO getPersonalChatByUserIdAndChatId(Long chatId, String userId);
+    ChatAdapterWithFlagProducerDTO getPersonalChatByUserIdAndChatId(long chatId, String userId);
 
-    List<PersonalMessageResponseDTO> getPersonalHistory(Long chatId, Integer offset);
+    List<PersonalMessageResponseDTO> getPersonalHistory(long chatId, int offset);
 
-    Integer savePublicMessage(String message, String producerUserId, LocalDateTime currentTime);
+    int savePublicMessage(String message, String producerUserId, LocalDateTime currentTime);
 
-    Integer savePersonalMessage(String message, LocalDateTime currentTime, Long chatId, Boolean senderIsProducer);
+    int savePersonalMessage(String message, LocalDateTime currentTime, long chatId, boolean senderIsProducer);
 
-    Long saveChat(String producerUserId, String consumerUserId);
+    long saveChat(String producerUserId, String consumerUserId);
 }

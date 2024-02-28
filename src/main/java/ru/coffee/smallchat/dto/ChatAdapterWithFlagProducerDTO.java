@@ -7,5 +7,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class ChatAdapterWithFlagProducerDTO {
     private ChatDTO chatDTO;
-    private Boolean userIsProducerInChat;
+    private boolean userIsProducerInChat;
 }
