@@ -1,6 +1,7 @@
 ## APP
 /.idea/
-/src/main/resources/application.properties
-/target/
-/user_photos/
-/log/
+/backend/.idea/
+/backend/log/
+/backend/target/
+/backend/user_photos/
+/backend/src/main/resources/application.properties

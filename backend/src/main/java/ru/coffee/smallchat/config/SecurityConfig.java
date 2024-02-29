@@ -36,6 +36,8 @@ public class SecurityConfig {
                                 .requestMatchers("/login/**").permitAll()
                                 //websocket
                                 .requestMatchers("/websocket/endpoint").permitAll()
+                                //metrics
+                                .requestMatchers("/actuator/prometheus").permitAll()
                                 //authenticated
                                 .anyRequest().authenticated())
                 .addFilterAfter(jwtFilter, SessionManagementFilter.class)
