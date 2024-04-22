@@ -31,6 +31,7 @@ CREATE TABLE users
     created_at    timestamp DEFAULT now()                   NOT NULL,
     deleted_at    timestamp,
     last_login_at timestamp DEFAULT now(),
+	is_blocked 	  bool,
 
     CONSTRAINT users_pk PRIMARY KEY (id),
     CONSTRAINT users_auth_type_id_fk FOREIGN KEY (auth_type_id) REFERENCES auth_types (id)

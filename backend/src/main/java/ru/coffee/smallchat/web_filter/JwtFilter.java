@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.GenericFilterBean;
+import ru.coffee.smallchat.entity.UserIdAuthenticationToken;
 import ru.coffee.smallchat.service.JwtService;
 
 import java.io.IOException;
@@ -48,7 +49,7 @@ public class JwtFilter extends GenericFilterBean {
 
             if (jwtService.validation(jwtToken)) {
                 try {
-                    Authentication authentication = jwtService.getAuthentication(jwtToken);
+                    UserIdAuthenticationToken authentication = jwtService.getAuthentication(jwtToken);
                     authentication.setAuthenticated(true);
                     return authentication;
                 } catch (Exception e) {

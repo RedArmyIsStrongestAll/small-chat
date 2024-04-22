@@ -254,7 +254,8 @@ CREATE TABLE public.users (
     photo_type character varying(50),
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     deleted_at timestamp without time zone,
-    last_login_at timestamp without time zone DEFAULT now()
+    last_login_at timestamp without time zone DEFAULT now(), 
+	is_blocked boolean
 );
 
 
@@ -311,7 +312,7 @@ COPY public.public_messages (id, producer_user_id, message, send_time, deleted_a
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.users (id, auth_id, auth_type_id, name, photo_path, photo_type, created_at, deleted_at, last_login_at) FROM stdin;
+COPY public.users (id, auth_id, auth_type_id, name, photo_path, photo_type, created_at, deleted_at, last_login_at, is_blocked) FROM stdin;
 \.
 
 

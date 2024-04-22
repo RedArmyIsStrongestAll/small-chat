@@ -271,4 +271,15 @@ public class PostgresMainRepositoryImpl implements MainRepository {
                 "RETURNING id;";
         return jdbcTemplate.queryForObject(query, Long.class, Long.valueOf(producerUserId), Long.valueOf(consumerUserId));
     }
+
+    @Override
+    @Transactional
+    public boolean checkBlocking(String userId) throws DataAccessException {
+        String query = "select us.is_blocked \n" +
+                "from users us \n" +
+                "where us.id = ? \n" +
+                "and us.deleted_at is null;";
+        return jdbcTemplate.query(query, new Object[]{Long.valueOf(userId)}, new int[]{Types.BIGINT},
+                (rs, ri) -> rs.getBoolean("is_blocked")).get(0);
+    }
 }

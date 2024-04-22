@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import ru.coffee.smallchat.entity.UserIdAuthenticationToken;
 
@@ -54,7 +53,7 @@ public class JwtService {
         return dateEnd.after(new Date());
     }
 
-    public Authentication getAuthentication(String jwtToken) {
+    public UserIdAuthenticationToken getAuthentication(String jwtToken) {
         String sub = getClaim(jwtToken, Claims::getSubject);
         if (sub == null || sub.isEmpty()) {
             log.error("JwtService.getAuthentication - неожиданное поведение, " +

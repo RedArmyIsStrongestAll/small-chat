@@ -8,7 +8,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.session.SessionManagementFilter;
+import ru.coffee.smallchat.repository.MainRepository;
 import ru.coffee.smallchat.service.JwtService;
+import ru.coffee.smallchat.web_filter.BlockingUserFilter;
 import ru.coffee.smallchat.web_filter.JwtFilter;
 
 @Configuration
@@ -22,7 +24,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain config(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
+    public BlockingUserFilter blockingUserFilter(MainRepository mainRepository) {
+        return new BlockingUserFilter(mainRepository);
+    }
+
+    @Bean
+    public SecurityFilterChain config(HttpSecurity http, JwtFilter jwtFilter,
+                                      BlockingUserFilter blockingUserFilter) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorize) ->
@@ -41,6 +49,7 @@ public class SecurityConfig {
                                 //authenticated
                                 .anyRequest().authenticated())
                 .addFilterAfter(jwtFilter, SessionManagementFilter.class)
+                .addFilterAfter(blockingUserFilter, JwtFilter.class)
                 .sessionManagement((session) ->
                         session.maximumSessions(1))
         ;

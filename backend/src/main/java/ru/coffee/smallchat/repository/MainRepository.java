@@ -41,4 +41,6 @@ public interface MainRepository {
     int savePersonalMessage(String message, LocalDateTime currentTime, long chatId, boolean senderIsProducer);
 
     long saveChat(String producerUserId, String consumerUserId);
+
+    boolean checkBlocking(String userId);
 }
