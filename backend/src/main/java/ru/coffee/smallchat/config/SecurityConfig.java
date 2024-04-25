@@ -35,18 +35,13 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorize) ->
                         authorize
-                                //swagger
                                 .requestMatchers("/swag").permitAll()
                                 .requestMatchers("/api/**").permitAll()
                                 .requestMatchers("/swagger-ui/**", "/swagger-ui/**.css",
                                         "/swagger-ui/**.js", "/swagger-ui/**.html").permitAll()
-                                //login
                                 .requestMatchers("/login/**").permitAll()
-                                //websocket
                                 .requestMatchers("/websocket/endpoint").permitAll()
-                                //metrics
                                 .requestMatchers("/actuator/prometheus").permitAll()
-                                //authenticated
                                 .anyRequest().authenticated())
                 .addFilterAfter(jwtFilter, SessionManagementFilter.class)
                 .addFilterAfter(blockingUserFilter, JwtFilter.class)
