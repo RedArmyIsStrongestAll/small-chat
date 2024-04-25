@@ -34,6 +34,8 @@ public class OAuthLoginServiceImpl implements LoginService {
     private final ObjectMapper objectMapper;
     private final GeolocationProperties geolocationProperties;
 
+    private final String relocationVk;
+
     public OAuthLoginServiceImpl(@Autowired MainService mainService,
                                  @Autowired JwtService jwtService,
                                  @Autowired Environment env,
@@ -47,6 +49,15 @@ public class OAuthLoginServiceImpl implements LoginService {
         this.meterRegistry = meterRegistry;
         this.objectMapper = new ObjectMapper();
         this.geolocationProperties = geolocationProperties;
+
+        relocationVk = env.getProperty("vk.id.address.silent-token") +
+                "?uuid=" +
+                env.getProperty("vk.id.oauth.uuid") +
+                "&app_id=" +
+                env.getProperty("vk.id.oauth.app-id") +
+                "&response_type=silent_token" +
+                "&redirect_uri=" +
+                env.getProperty("vk.id.oauth.riderect-uri");
     }
 
     @Override
@@ -58,7 +69,7 @@ public class OAuthLoginServiceImpl implements LoginService {
         String location = null;
         switch (loginRequestDTO.getType()) {
             case 1:
-                location = relocationVk();
+                location = relocationVk;
                 break;
         }
 
@@ -101,17 +112,6 @@ public class OAuthLoginServiceImpl implements LoginService {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         double distance = earthRadius * c;
         return distance <= radius;
-    }
-
-    private String relocationVk() {
-        return env.getProperty("vk.id.address.silent-token") +
-                "?uuid=" +
-                env.getProperty("vk.id.oauth.uuid") +
-                "&app_id=" +
-                env.getProperty("vk.id.oauth.app-id") +
-                "&response_type=silent_token" +
-                "&redirect_uri=" +
-                env.getProperty("vk.id.oauth.riderect-uri");
     }
 
     @Override
